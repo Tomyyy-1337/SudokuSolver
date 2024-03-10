@@ -198,9 +198,6 @@ impl Model {
                 self.step_count = 0;
                 self.direction = Direction::Forward;
             }
-            if ui.button("Clear selection").clicked() {
-                self.selected = None;
-            }
         });    
     }
 

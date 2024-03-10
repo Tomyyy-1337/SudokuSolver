@@ -60,20 +60,25 @@ fn update(app: &App, model: &mut Model, update: Update) {
         }
     });
 
+    let mouse_pos = app.mouse.position();
+    let size = window_height.min(window_width) as f32;
+    if mouse_pos.x.abs() < size / 2.0 && mouse_pos.y.abs() < size / 2.0 {
+        let x = ((mouse_pos.x + size / 2.0) / (size / 9.0)) as usize;
+        let y = ((mouse_pos.y + size / 2.0) / (size / 9.0)) as usize;
+        let selected_index = y * 9 + x;
+        model.selected = Some(selected_index);
+    } else {
+        model.selected = None;
+    }
+    
+
     app.mouse.buttons.pressed().for_each(|button| {
         let size = window_height.min(window_width) as f32;
         match button {
-            (MouseButton::Left, v) if v.x.abs() < size / 2.0 && v.y.abs() < size / 2.0 => {
-                let x = ((v.x + size / 2.0) / (size / 9.0)) as usize;
-                let y = ((v.y + size / 2.0) / (size / 9.0)) as usize;
-                let selected_index = y * 9 + x;
-                model.selected = Some(selected_index);
-            }
-            (MouseButton::Right, v) if v.x.abs() < size / 2.0 && v.y.abs() < size / 2.0 => {
-                let x = ((v.x + size / 2.0) / (size / 9.0)) as usize;
-                let y = ((v.y + size / 2.0) / (size / 9.0)) as usize;
-                let selected_index = y * 9 + x;
-                model.try_insert(selected_index, Tile::Empty);
+            (MouseButton::Left | MouseButton::Right, v) if v.x.abs() < size / 2.0 && v.y.abs() < size / 2.0 => {
+                if let Some(selected) = model.selected {
+                    model.try_insert(selected, Tile::Empty);
+                }
             }
             _ => (),
             
