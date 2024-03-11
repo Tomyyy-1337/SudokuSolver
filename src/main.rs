@@ -1,6 +1,7 @@
 // #![windows_subsystem = "windows"]
 use nannou::prelude::*;
 
+mod events;
 mod model;
 mod sudoku;
 use model::Model;
@@ -25,83 +26,14 @@ fn model(app: &App) -> Model {
 }
 
 fn update(app: &App, model: &mut Model, update: Update) {
-    let window_width = app.window_rect().w() as u32;
-    let window_height = app.window_rect().h() as u32;
-
-    if window_width != model.window_width || window_height != model.window_height {
-        model.window_width = window_width;
-        model.window_height = window_height;
-    }
-
-    handle_keyboard_events(app, model);
-    handle_mouse_events(app, window_height, window_width, model);
+    events::update_size(app, model);
+    events::handle_keyboard_events(app, model);
+    events::handle_mouse_events(app, model.window_height, model.window_width, model);
 
     model.update_gui(update);
 
     if model.sudoku.running {
         model.sudoku.step();
-    }
-}
-
-fn handle_mouse_events(app: &App, window_height: u32, window_width: u32, model: &mut Model) {
-    if model.sudoku.running {
-        return;
-    }
-    let mouse_pos = app.mouse.position();
-    let size = window_height.min(window_width) as f32 - 10.0;
-    if mouse_pos.x.abs() < size / 2.0 && mouse_pos.y.abs() < size / 2.0 {
-        let x = ((mouse_pos.x + size / 2.0) / (size / 9.0)) as usize;
-        let y = ((mouse_pos.y + size / 2.0) / (size / 9.0)) as usize;
-        let selected_index = y * 9 + x;
-        model.selected = Some(selected_index);
-    } else {
-        model.selected = None;
-    }
-
-    let size = window_height.min(window_width) as f32;
-    app.mouse.buttons.pressed().for_each(|button| match button {
-        (MouseButton::Left | MouseButton::Right, v)
-            if v.x.abs() < size / 2.0 && v.y.abs() < size / 2.0 =>
-        {
-            model.sudoku.clear_variables();
-            model.sudoku.reset_solver();
-            if let Some(selected) = model.selected {
-                model.sudoku.try_insert(selected, sudoku::Tile::Empty);
-            }
-        }
-        _ => (),
-    });
-}
-
-fn handle_keyboard_events(app: &App, model: &mut Model) {
-    app.keys.down.iter().for_each(|key| match key {
-        Key::F11 => app
-            .main_window()
-            .set_fullscreen(!app.main_window().is_fullscreen()),
-        Key::Back => model.sudoku.running = !model.sudoku.running,
-        Key::Key1 | Key::Numpad1 => write_number(model, 1),
-        Key::Key2 | Key::Numpad2 => write_number(model, 2),
-        Key::Key3 | Key::Numpad3 => write_number(model, 3),
-        Key::Key4 | Key::Numpad4 => write_number(model, 4),
-        Key::Key5 | Key::Numpad5 => write_number(model, 5),
-        Key::Key6 | Key::Numpad6 => write_number(model, 6),
-        Key::Key7 | Key::Numpad7 => write_number(model, 7),
-        Key::Key8 | Key::Numpad8 => write_number(model, 8),
-        Key::Key9 | Key::Numpad9 => write_number(model, 9),
-        _ => (),
-    });
-}
-
-fn write_number(model: &mut Model, number: u8) {
-    if model.sudoku.running {
-        return;
-    }
-    model.sudoku.clear_variables();
-    model.sudoku.reset_solver();
-    if let Some(selected) = model.selected {
-        model
-            .sudoku
-            .try_insert(selected, sudoku::Tile::Const(number));
     }
 }
 

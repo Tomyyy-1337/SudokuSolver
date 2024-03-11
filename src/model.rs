@@ -9,6 +9,7 @@ pub struct Model {
     pub window_height: u32,
     pub sudoku: sudoku::Sudoku,
     pub selected: Option<usize>,
+    pub key_delay: f32,
 }
 
 impl Model {
@@ -19,54 +20,18 @@ impl Model {
             window_height: height,
             selected: None,
             sudoku: sudoku::Sudoku::default(),
+            key_delay: 0.0,
         }
     }
 
-    pub fn update_gui(&mut self, update: Update) {
-        self.egui.set_elapsed_time(update.since_start);
-        let ctx = self.egui.begin_frame();
-        egui::Window::new("Settings").show(&ctx, |ui| {
-            ui.heading("Solver Settings:");
-            if ui
-                .checkbox(&mut self.sudoku.running, "Run solver")
-                .clicked()
-            {
-                self.sudoku.reset_solver();
-                self.sudoku.clear_variables();
-            }
-            ui.label("Steps per frame:");
-            ui.add(
-                egui::Slider::new(&mut self.sudoku.steps_per_frame, 0.01..=100000.0)
-                    .logarithmic(true),
-            );
-            ui.label(format!("Current Steps: {}", self.sudoku.step_count));
-            ui.heading("Clear Options:");
-            if ui.button("Clear All").clicked() {
-                self.sudoku.tiles = vec![Tile::Empty; 81];
-                self.sudoku.reset_solver()
-            }
-            if ui.button("Clear Result").clicked() {
-                self.sudoku.clear_variables();
-                self.sudoku.reset_solver()
-            }
-
-            if ui.button("Load random Sudoku").clicked() {
-                self.sudoku.load_random();
-            }
-            ui.heading("Difficulty:");
-            egui::ComboBox::new("Difficulty", "")
-                .selected_text(self.sudoku.difficulty.to_string())
-                .show_ui(ui, |ui| {
-                    for kind in [
-                        Difficulty::Easy,
-                        Difficulty::Medium,
-                        Difficulty::Hard,
-                        Difficulty::VeryHard,
-                    ] {
-                        ui.selectable_value(&mut self.sudoku.difficulty, kind, kind.to_string());
-                    }
-                });
-        });
+    /// Tracks the elapsed time since the last frame key press.
+    /// Returns true if the delay of 0.2 seconds has passed.
+    pub fn key_delay_over(&mut self) -> bool {
+        if self.key_delay < 0.2 {
+            return false;
+        }
+        self.key_delay = 0.0;
+        true
     }
 
     pub fn draw(&self, draw: &Draw) {
@@ -140,5 +105,52 @@ impl Model {
                 .w_h(size / 9.0, size / 9.0)
                 .color(color::rgba(1.0, 1.0, 1.0, 0.05));
         }
+    }
+
+    pub fn update_gui(&mut self, update: Update) {
+        self.egui.set_elapsed_time(update.since_start);
+        let ctx = self.egui.begin_frame();
+        egui::Window::new("Settings").show(&ctx, |ui| {
+            ui.heading("Solver Settings:");
+            if ui
+                .checkbox(&mut self.sudoku.running, "Run solver")
+                .clicked()
+            {
+                self.sudoku.reset_solver();
+                self.sudoku.clear_variables();
+            }
+            ui.label("Steps per frame:");
+            ui.add(
+                egui::Slider::new(&mut self.sudoku.steps_per_frame, 0.01..=100000.0)
+                    .logarithmic(true),
+            );
+            ui.label(format!("Current Steps: {}", self.sudoku.step_count));
+            ui.heading("Clear Options:");
+            if ui.button("Clear All").clicked() {
+                self.sudoku.tiles = vec![Tile::Empty; 81];
+                self.sudoku.reset_solver()
+            }
+            if ui.button("Clear Result").clicked() {
+                self.sudoku.clear_variables();
+                self.sudoku.reset_solver()
+            }
+
+            if ui.button("Load random Sudoku").clicked() {
+                self.sudoku.load_random();
+            }
+            ui.heading("Difficulty:");
+            egui::ComboBox::new("Difficulty", "")
+                .selected_text(self.sudoku.difficulty.to_string())
+                .show_ui(ui, |ui| {
+                    for kind in [
+                        Difficulty::Easy,
+                        Difficulty::Medium,
+                        Difficulty::Hard,
+                        Difficulty::VeryHard,
+                    ] {
+                        ui.selectable_value(&mut self.sudoku.difficulty, kind, kind.to_string());
+                    }
+                });
+        });
     }
 }

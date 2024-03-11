@@ -35,6 +35,24 @@ impl Difficulty {
             Difficulty::VeryHard => "Very Hard",
         }
     }
+
+    pub fn harder(&self) -> Self {
+        match self {
+            Difficulty::Easy => Difficulty::Medium,
+            Difficulty::Medium => Difficulty::Hard,
+            Difficulty::Hard => Difficulty::VeryHard,
+            Difficulty::VeryHard => Difficulty::VeryHard,
+        }
+    }
+
+    pub fn easier(&self) -> Self {
+        match self {
+            Difficulty::Easy => Difficulty::Easy,
+            Difficulty::Medium => Difficulty::Easy,
+            Difficulty::Hard => Difficulty::Medium,
+            Difficulty::VeryHard => Difficulty::Hard,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -65,12 +83,47 @@ impl Default for Sudoku {
 }
 
 impl Sudoku {
+    /// Checks if the current state of the sudoku is valid.
+    /// A State is valid if no number is repeated in any row, column or 3x3 square.
+    pub fn is_valid(&self) -> bool {
+        !self.check_seen(|i, j| i + j * 9) && 
+        !self.check_seen(|i, j| i * 9 + j) && 
+        !self.check_seen(|i, j| (i % 3) * 3 + (i / 3) * 27 + (j % 3) + (j / 3) * 9)
+    }
+
+    /// Checks if the current row, column or 3x3 square has any repeated numbers.
+    /// Returns true if there are any repeated numbers, false otherwise.
+    /// The function takes a closure that returns the index of the tile to check.
+    fn check_seen(&self, function: fn(usize, usize) -> usize) -> bool {
+        let mut seen: u16;
+        for i in 0..9 {
+            seen = 0;
+            for indx in (0..9).map(|j| function(i, j)) {
+                match self.tiles[indx] {
+                    Tile::Variable(n) | Tile::Const(n) if seen >> n & 1 == 1 => return true,
+                    Tile::Variable(n) | Tile::Const(n) => seen |= 1 << n,
+                    _ => (),
+                }
+            }
+        }
+        false
+    }
+
     pub fn reset_solver(&mut self) {
         self.active_indx = 0;
         self.step_count = 0;
         self.direction = Direction::Forward;
     }
 
+    pub fn clear_variables(&mut self) {
+        for tile in self.tiles.iter_mut() {
+            if let Tile::Variable(_) = tile {
+                *tile = Tile::Empty;
+            }
+        }
+    }
+
+    /// Loads a random Sudoku from the included list of sudokus
     pub fn load_random(&mut self) {
         let list = match self.difficulty {
             Difficulty::Easy => EASY,
@@ -80,6 +133,12 @@ impl Sudoku {
         };
         let random_line = list.lines().choose(&mut rand::thread_rng()).unwrap();
         *self = self.from_line(random_line);
+    }
+
+    /// Changes the number of steps per frame by a multiplier.
+    /// Steps per frame is clamped between 0.01 and 100000.
+    pub fn change_steps_per_frame(&mut self, mult: f64) {
+        self.steps_per_frame = (self.steps_per_frame * mult).max(0.01).min(100000.0);
     }
 
     fn from_line(&self, line: &str) -> Self {
@@ -102,14 +161,8 @@ impl Sudoku {
         }
     }
 
-    pub fn clear_variables(&mut self) {
-        for tile in self.tiles.iter_mut() {
-            if let Tile::Variable(_) = tile {
-                *tile = Tile::Empty;
-            }
-        }
-    }
-
+    /// Tries to insert a tile at the given index.
+    /// If the insertion results in an invalid state, the tile is not inserted.
     pub fn try_insert(&mut self, indx: usize, tile: Tile) {
         let tmp = self.tiles[indx];
         self.tiles[indx] = tile;
@@ -118,32 +171,10 @@ impl Sudoku {
         }
     }
 
-    fn is_valid(&self) -> bool {
-        if self.check_seen(|i, j| i + j * 9)
-            || self.check_seen(|i, j| i * 9 + j)
-            || self.check_seen(|i, j| (i % 3) * 3 + (i / 3) * 27 + (j % 3) + (j / 3) * 9)
-        {
-            return false;
-        }
-        true
-    }
-
-    fn check_seen(&self, function: fn(usize, usize) -> usize) -> bool {
-        let mut seen: u16;
-        for i in 0..9 {
-            seen = 0;
-            for j in 0..9 {
-                let indx = function(i, j);
-                match self.tiles[indx] {
-                    Tile::Variable(n) | Tile::Const(n) if seen >> n & 1 == 1 => return true,
-                    Tile::Variable(n) | Tile::Const(n) => seen |= 1 << n,
-                    _ => (),
-                }
-            }
-        }
-        false
-    }
-
+    /// Backtracking Sudoku solver.
+    /// Itteraively solves the sudoku by trying to insert a number at each empty tile.
+    /// If the insertion results in an invalid state, the tile is reset and the next number is tried.
+    /// If no number can be inserted, the function backtracks to the previous tile and tries the next number.
     pub fn step(&mut self) {
         let mut steps_per_frame = self.steps_per_frame;
         if self.steps_per_frame < 1.0 {
@@ -176,15 +207,15 @@ impl Sudoku {
                 Tile::Variable(n) => {
                     if self.is_valid() && self.direction == Direction::Forward {
                         self.active_indx += 1;
+                        continue;
+                    } 
+                    if n == 9 {
+                        self.tiles[self.active_indx] = Tile::Empty;
+                        self.active_indx -= 1;
+                        self.direction = Direction::Backward;
                     } else {
-                        if n == 9 {
-                            self.tiles[self.active_indx] = Tile::Empty;
-                            self.active_indx -= 1;
-                            self.direction = Direction::Backward;
-                        } else {
-                            self.tiles[self.active_indx] = Tile::Variable(n + 1);
-                            self.direction = Direction::Forward;
-                        }
+                        self.tiles[self.active_indx] = Tile::Variable(n + 1);
+                        self.direction = Direction::Forward;
                     }
                 }
             }
