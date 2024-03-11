@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 use nannou::prelude::*;
 
 mod model;
@@ -59,19 +59,17 @@ fn handle_mouse_events(app: &App, window_height: u32, window_width: u32, model: 
     }
 
     let size = window_height.min(window_width) as f32;
-    app.mouse.buttons.pressed().for_each(|button| {
-        match button {
-            (MouseButton::Left | MouseButton::Right, v)
-                if v.x.abs() < size / 2.0 && v.y.abs() < size / 2.0 =>
-            {
-                model.sudoku.clear_variables();
-                model.sudoku.reset_solver();
-                if let Some(selected) = model.selected {
-                    model.sudoku.try_insert(selected, sudoku::Tile::Empty);
-                }
+    app.mouse.buttons.pressed().for_each(|button| match button {
+        (MouseButton::Left | MouseButton::Right, v)
+            if v.x.abs() < size / 2.0 && v.y.abs() < size / 2.0 =>
+        {
+            model.sudoku.clear_variables();
+            model.sudoku.reset_solver();
+            if let Some(selected) = model.selected {
+                model.sudoku.try_insert(selected, sudoku::Tile::Empty);
             }
-            _ => (),
         }
+        _ => (),
     });
 }
 
@@ -81,38 +79,35 @@ fn handle_keyboard_events(app: &App, model: &mut Model) {
             .main_window()
             .set_fullscreen(!app.main_window().is_fullscreen()),
         Key::Back => model.sudoku.running = !model.sudoku.running,
-        Key::Key1 | Key::Key2 | Key::Key3 | Key::Key4 | Key::Key5 | Key::Key6 | 
-        Key::Key7 | Key::Key8 | Key::Key9 | Key::Numpad1 | Key::Numpad2 | Key::Numpad3 | 
-        Key::Numpad4 | Key::Numpad5 | Key::Numpad6 | Key::Numpad7 | Key::Numpad8 | Key::Numpad9 if !model.sudoku.running => {
-            model.sudoku.clear_variables();
-            model.sudoku.reset_solver();
-            if let Some(selected) = model.selected {
-                let number = match key {
-                    Key::Key1 | Key::Numpad1 => 1,
-                    Key::Key2 | Key::Numpad2 => 2,
-                    Key::Key3 | Key::Numpad3 => 3,
-                    Key::Key4 | Key::Numpad4 => 4,
-                    Key::Key5 | Key::Numpad5 => 5,
-                    Key::Key6 | Key::Numpad6 => 6,
-                    Key::Key7 | Key::Numpad7 => 7,
-                    Key::Key8 | Key::Numpad8 => 8,
-                    Key::Key9 | Key::Numpad9 => 9,
-                    _ => panic!("This should never happen"),
-                };
-                model
-                    .sudoku
-                    .try_insert(selected, sudoku::Tile::Const(number));
-            }
-        }
+        Key::Key1 | Key::Numpad1 => write_number(model, 1),
+        Key::Key2 | Key::Numpad2 => write_number(model, 2),
+        Key::Key3 | Key::Numpad3 => write_number(model, 3),
+        Key::Key4 | Key::Numpad4 => write_number(model, 4),
+        Key::Key5 | Key::Numpad5 => write_number(model, 5),
+        Key::Key6 | Key::Numpad6 => write_number(model, 6),
+        Key::Key7 | Key::Numpad7 => write_number(model, 7),
+        Key::Key8 | Key::Numpad8 => write_number(model, 8),
+        Key::Key9 | Key::Numpad9 => write_number(model, 9),
         _ => (),
     });
 }
 
+fn write_number(model: &mut Model, number: u8) {
+    if model.sudoku.running {
+        return;
+    }
+    model.sudoku.clear_variables();
+    model.sudoku.reset_solver();
+    if let Some(selected) = model.selected {
+        model
+            .sudoku
+            .try_insert(selected, sudoku::Tile::Const(number));
+    }
+}
+
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
-
     model.draw(&draw);
-
     draw.to_frame(app, &frame).unwrap();
     model.egui.draw_to_frame(&frame).unwrap();
 }

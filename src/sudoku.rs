@@ -1,5 +1,10 @@
 use rand::seq::IteratorRandom;
 
+const EASY: &str = include_str!("../input/Sudoku_easy.sdm");
+const MEDIUM: &str = include_str!("../input/Sudoku_medium.sdm");
+const HARD: &str = include_str!("../input/Sudoku_hard.sdm");
+const VERY_HARD: &str = include_str!("../input/Top_50K_Toughest.sdm");
+
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum Direction {
     Forward,
@@ -12,11 +17,6 @@ pub enum Tile {
     Variable(u8),
     Const(u8),
 }
-
-const EASY: &str = include_str!("../input/Sudoku_easy.sdm");
-const MEDIUM: &str = include_str!("../input/Sudoku_medium.sdm");
-const HARD: &str = include_str!("../input/Sudoku_hard.sdm");
-const VERY_HARD: &str = include_str!("../input/Top_50K_Toughest.sdm");
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Difficulty {
@@ -84,7 +84,8 @@ impl Sudoku {
 
     fn from_line(&self, line: &str) -> Self {
         Sudoku {
-            tiles : line.chars()
+            tiles: line
+                .chars()
                 .map(|c| match c {
                     '1'..='9' => Tile::Const(c.to_digit(10).unwrap() as u8),
                     '0' => Tile::Empty,
@@ -118,39 +119,29 @@ impl Sudoku {
     }
 
     fn is_valid(&self) -> bool {
+        if self.check_seen(|i, j| i + j * 9)
+            || self.check_seen(|i, j| i * 9 + j)
+            || self.check_seen(|i, j| (i % 3) * 3 + (i / 3) * 27 + (j % 3) + (j / 3) * 9)
+        {
+            return false;
+        }
+        true
+    }
+
+    fn check_seen(&self, function: fn(usize, usize) -> usize) -> bool {
+        let mut seen: u16;
         for i in 0..9 {
+            seen = 0;
             for j in 0..9 {
-                let n = match self.tiles[i * 9 + j] {
-                    Tile::Variable(n) | Tile::Const(n) => n,
-                    Tile::Empty => continue,
-                };
-                for k in 0..9 {
-                    match self.tiles[i * 9 + k] {
-                        Tile::Variable(m) | Tile::Const(m) if n == m && j != k => return false,
-                        _ => (),
-                    }
-                    match self.tiles[k * 9 + j] {
-                        Tile::Variable(m) | Tile::Const(m) if n == m && i != k => return false,
-                        _ => (),
-                    }
-                }
-                let x0 = (j / 3) * 3;
-                let y0 = (i / 3) * 3;
-                for k in 0..3 {
-                    for l in 0..3 {
-                        match self.tiles[(y0 + k) * 9 + x0 + l] {
-                            Tile::Variable(m) | Tile::Const(m)
-                                if n == m && (y0 + k) * 9 + x0 + l != i * 9 + j =>
-                            {
-                                return false
-                            }
-                            _ => (),
-                        }
-                    }
+                let indx = function(i, j);
+                match self.tiles[indx] {
+                    Tile::Variable(n) | Tile::Const(n) if seen >> n & 1 == 1 => return true,
+                    Tile::Variable(n) | Tile::Const(n) => seen |= 1 << n,
+                    _ => (),
                 }
             }
         }
-        true
+        false
     }
 
     pub fn step(&mut self) {

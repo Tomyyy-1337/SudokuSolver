@@ -1,7 +1,7 @@
 use nannou::{color, prelude::*};
 use nannou_egui::{self, egui, Egui};
 
-use crate::sudoku::{self, Tile, Difficulty};
+use crate::sudoku::{self, Difficulty, Tile};
 
 pub struct Model {
     pub egui: Egui,
@@ -27,7 +27,10 @@ impl Model {
         let ctx = self.egui.begin_frame();
         egui::Window::new("Settings").show(&ctx, |ui| {
             ui.heading("Solver Settings:");
-            if ui.checkbox(&mut self.sudoku.running, "Run solver").clicked() {
+            if ui
+                .checkbox(&mut self.sudoku.running, "Run solver")
+                .clicked()
+            {
                 self.sudoku.reset_solver();
                 self.sudoku.clear_variables();
             }
@@ -36,6 +39,9 @@ impl Model {
                 egui::Slider::new(&mut self.sudoku.steps_per_frame, 0.01..=100000.0)
                 .logarithmic(true),
             );
+            let frame_rate: u32 = (1.0 / update.since_last.as_secs_f64()) as u32;
+            ui.label(format!("Steps per second: {:.1}", self.sudoku.steps_per_frame * frame_rate as f64));
+            ui.label(format!("Current Steps: {}", self.sudoku.step_count));
             ui.heading("Clear Options:");
             if ui.button("Clear All").clicked() {
                 self.sudoku.tiles = vec![Tile::Empty; 81];
@@ -45,21 +51,23 @@ impl Model {
                 self.sudoku.clear_variables();
                 self.sudoku.reset_solver()
             }
-            
+
             if ui.button("Load random Sudoku").clicked() {
                 self.sudoku.load_random();
             }
             ui.heading("Difficulty:");
             egui::ComboBox::new("Difficulty", "")
-            .selected_text(self.sudoku.difficulty.to_string())
-            .show_ui(ui, |ui| {
-                for kind in [ Difficulty::Easy, Difficulty::Medium, Difficulty::Hard, Difficulty::VeryHard ] {
-                    ui.selectable_value(&mut self.sudoku.difficulty, kind, kind.to_string());
-                }
-            });
-            if self.sudoku.running || self.sudoku.active_indx > 0 {
-                ui.label(format!("Current Steps: {}", self.sudoku.step_count));
-            }
+                .selected_text(self.sudoku.difficulty.to_string())
+                .show_ui(ui, |ui| {
+                    for kind in [
+                        Difficulty::Easy,
+                        Difficulty::Medium,
+                        Difficulty::Hard,
+                        Difficulty::VeryHard,
+                    ] {
+                        ui.selectable_value(&mut self.sudoku.difficulty, kind, kind.to_string());
+                    }
+                });
         });
     }
 
@@ -118,14 +126,14 @@ impl Model {
                 .stroke_weight(width)
                 .color(color);
         }
-        
+
         if self.sudoku.running {
             let x = (self.sudoku.active_indx % 9) as f32 * size / 9.0 - size / 2.0;
             let y = (self.sudoku.active_indx / 9) as f32 * size / 9.0 - size / 2.0;
             draw.rect()
-            .x_y(x + size / 18.0, y + size / 18.0)
-            .w_h(size / 9.0, size / 9.0)
-            .color(color::rgba(1.0, 0.0, 0.0, 0.1));
+                .x_y(x + size / 18.0, y + size / 18.0)
+                .w_h(size / 9.0, size / 9.0)
+                .color(color::rgba(1.0, 0.0, 0.0, 0.1));
         } else if let Some(indx) = self.selected {
             let x = (indx % 9) as f32 * size / 9.0 - size / 2.0;
             let y = (indx / 9) as f32 * size / 9.0 - size / 2.0;
