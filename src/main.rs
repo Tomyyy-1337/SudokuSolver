@@ -75,24 +75,9 @@ fn handle_keyboard_events(app: &App, model: &mut Model) {
             .main_window()
             .set_fullscreen(!app.main_window().is_fullscreen()),
         Key::Back => model.sudoku.running = !model.sudoku.running,
-        Key::Key1
-        | Key::Key2
-        | Key::Key3
-        | Key::Key4
-        | Key::Key5
-        | Key::Key6
-        | Key::Key7
-        | Key::Key8
-        | Key::Key9
-        | Key::Numpad1
-        | Key::Numpad2
-        | Key::Numpad3
-        | Key::Numpad4
-        | Key::Numpad5
-        | Key::Numpad6
-        | Key::Numpad7
-        | Key::Numpad8
-        | Key::Numpad9 => {
+        Key::Key1 | Key::Key2 | Key::Key3 | Key::Key4 | Key::Key5 | Key::Key6 | 
+        Key::Key7 | Key::Key8 | Key::Key9 | Key::Numpad1 | Key::Numpad2 | Key::Numpad3 | 
+        Key::Numpad4 | Key::Numpad5 | Key::Numpad6 | Key::Numpad7 | Key::Numpad8 | Key::Numpad9 => {
             if let Some(selected) = model.selected {
                 let number = match key {
                     Key::Key1 | Key::Numpad1 => 1,
