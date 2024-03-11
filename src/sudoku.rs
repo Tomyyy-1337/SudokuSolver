@@ -31,7 +31,7 @@ impl Default for Sudoku {
             running: false,
             step_count: 0,
             steps_per_frame: 1,
-            solve_instantly: false
+            solve_instantly: false,
         }
     }
 }
@@ -44,7 +44,7 @@ impl Sudoku {
             self.tiles[indx] = tmp;
         }
     }
-    
+
     fn is_valid(&self) -> bool {
         for i in 0..9 {
             for j in 0..9 {
@@ -67,10 +67,11 @@ impl Sudoku {
                 for k in 0..3 {
                     for l in 0..3 {
                         match self.tiles[(y0 + k) * 9 + x0 + l] {
-                            Tile::Variable(m) | 
-                            Tile::Const(m) 
-                                if n == m && (y0 + k) * 9 + x0 + l != i * 9 + j  
-                                    => return false,
+                            Tile::Variable(m) | Tile::Const(m)
+                                if n == m && (y0 + k) * 9 + x0 + l != i * 9 + j =>
+                            {
+                                return false
+                            }
                             _ => (),
                         }
                     }
@@ -83,18 +84,18 @@ impl Sudoku {
     pub fn step(&mut self) {
         for i in 0.. {
             if i >= self.steps_per_frame && !self.solve_instantly {
-                break
+                break;
             }
             if self.active_indx >= 81 {
                 self.running = false;
-                return
+                return;
             }
             self.step_count += 1;
             match self.tiles[self.active_indx] {
                 Tile::Empty => {
                     self.tiles[self.active_indx] = Tile::Variable(1);
                     self.direction = Direction::Forward;
-                },
+                }
                 Tile::Const(_) => match self.direction {
                     Direction::Forward => self.active_indx += 1,
                     Direction::Backward => self.active_indx -= 1,
