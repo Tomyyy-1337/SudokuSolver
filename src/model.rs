@@ -39,8 +39,6 @@ impl Model {
                 egui::Slider::new(&mut self.sudoku.steps_per_frame, 0.01..=100000.0)
                 .logarithmic(true),
             );
-            let frame_rate: u32 = (1.0 / update.since_last.as_secs_f64()) as u32;
-            ui.label(format!("Steps per second: {:.1}", self.sudoku.steps_per_frame * frame_rate as f64));
             ui.label(format!("Current Steps: {}", self.sudoku.step_count));
             ui.heading("Clear Options:");
             if ui.button("Clear All").clicked() {
