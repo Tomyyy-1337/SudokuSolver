@@ -1,7 +1,7 @@
 use nannou::{color, prelude::*};
 use nannou_egui::{self, egui, Egui};
 
-use crate::sudoku::{self, Direction, Tile, Difficulty};
+use crate::sudoku::{self, Tile, Difficulty};
 
 pub struct Model {
     pub egui: Egui,
