@@ -1220,6 +1220,7 @@ version = "0.1.0"
 dependencies = [
  "nannou",
  "nannou_egui",
+ "rand 0.8.5",
 ]
 
 [[package]]

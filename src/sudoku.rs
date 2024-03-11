@@ -1,3 +1,5 @@
+use rand::seq::IteratorRandom;
+
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum Direction {
     Forward,
@@ -11,6 +13,30 @@ pub enum Tile {
     Const(u8),
 }
 
+const EASY: &str = include_str!("../input/Sudoku_easy.sdm");
+const MEDIUM: &str = include_str!("../input/Sudoku_medium.sdm");
+const HARD: &str = include_str!("../input/Sudoku_hard.sdm");
+const VERY_HARD: &str = include_str!("../input/Top_50K_Toughest.sdm");
+
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+pub enum Difficulty {
+    Easy,
+    Medium,
+    Hard,
+    VeryHard,
+}
+
+impl Difficulty {
+    pub fn to_string(&self) -> &str {
+        match self {
+            Difficulty::Easy => "Easy",
+            Difficulty::Medium => "Medium",
+            Difficulty::Hard => "Hard",
+            Difficulty::VeryHard => "Very Hard",
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Sudoku {
     pub tiles: Vec<Tile>,
@@ -19,8 +45,8 @@ pub struct Sudoku {
     pub running: bool,
     pub step_count: u64,
     pub steps_per_frame: f64,
-    pub solve_instantly: bool,
     substeps: u64,
+    pub difficulty: Difficulty,
 }
 
 impl Default for Sudoku {
@@ -32,13 +58,57 @@ impl Default for Sudoku {
             running: false,
             step_count: 0,
             steps_per_frame: 1.0,
-            solve_instantly: false,
             substeps: 0,
+            difficulty: Difficulty::Medium,
         }
     }
 }
 
 impl Sudoku {
+    pub fn reset_solver(&mut self) {
+        self.active_indx = 0;
+        self.step_count = 0;
+        self.direction = Direction::Forward;
+    }
+
+    pub fn load_random(&mut self) {
+        let list = match self.difficulty {
+            Difficulty::Easy => EASY,
+            Difficulty::Medium => MEDIUM,
+            Difficulty::Hard => HARD,
+            Difficulty::VeryHard => VERY_HARD,
+        };
+        let random_line = list.lines().choose(&mut rand::thread_rng()).unwrap();
+        *self = self.from_line(random_line);
+    }
+
+    fn from_line(&self, line: &str) -> Self {
+        Sudoku {
+            tiles : line.chars()
+                .map(|c| match c {
+                    '1'..='9' => Tile::Const(c.to_digit(10).unwrap() as u8),
+                    '0' => Tile::Empty,
+                    _ => panic!("Invalid character in input"),
+                })
+                .collect(),
+            active_indx: 0,
+            direction: Direction::Forward,
+            running: false,
+            step_count: 0,
+            steps_per_frame: self.steps_per_frame,
+            substeps: 0,
+            difficulty: self.difficulty,
+        }
+    }
+
+    pub fn clear_variables(&mut self) {
+        for tile in self.tiles.iter_mut() {
+            if let Tile::Variable(_) = tile {
+                *tile = Tile::Empty;
+            }
+        }
+    }
+
     pub fn try_insert(&mut self, indx: usize, tile: Tile) {
         let tmp = self.tiles[indx];
         self.tiles[indx] = tile;
@@ -95,7 +165,7 @@ impl Sudoku {
         }
 
         for i in 0.. {
-            if i >= steps_per_frame as u64 && !self.solve_instantly {
+            if i >= steps_per_frame as u64 {
                 break;
             }
             if self.active_indx >= 81 {

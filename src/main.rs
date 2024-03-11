@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 use nannou::prelude::*;
 
 mod model;
@@ -43,6 +44,9 @@ fn update(app: &App, model: &mut Model, update: Update) {
 }
 
 fn handle_mouse_events(app: &App, window_height: u32, window_width: u32, model: &mut Model) {
+    if model.sudoku.running {
+        return;
+    }
     let mouse_pos = app.mouse.position();
     let size = window_height.min(window_width) as f32 - 10.0;
     if mouse_pos.x.abs() < size / 2.0 && mouse_pos.y.abs() < size / 2.0 {
@@ -54,12 +58,14 @@ fn handle_mouse_events(app: &App, window_height: u32, window_width: u32, model: 
         model.selected = None;
     }
 
+    let size = window_height.min(window_width) as f32;
     app.mouse.buttons.pressed().for_each(|button| {
-        let size = window_height.min(window_width) as f32;
         match button {
             (MouseButton::Left | MouseButton::Right, v)
                 if v.x.abs() < size / 2.0 && v.y.abs() < size / 2.0 =>
             {
+                model.sudoku.clear_variables();
+                model.sudoku.reset_solver();
                 if let Some(selected) = model.selected {
                     model.sudoku.try_insert(selected, sudoku::Tile::Empty);
                 }
@@ -77,7 +83,9 @@ fn handle_keyboard_events(app: &App, model: &mut Model) {
         Key::Back => model.sudoku.running = !model.sudoku.running,
         Key::Key1 | Key::Key2 | Key::Key3 | Key::Key4 | Key::Key5 | Key::Key6 | 
         Key::Key7 | Key::Key8 | Key::Key9 | Key::Numpad1 | Key::Numpad2 | Key::Numpad3 | 
-        Key::Numpad4 | Key::Numpad5 | Key::Numpad6 | Key::Numpad7 | Key::Numpad8 | Key::Numpad9 => {
+        Key::Numpad4 | Key::Numpad5 | Key::Numpad6 | Key::Numpad7 | Key::Numpad8 | Key::Numpad9 if !model.sudoku.running => {
+            model.sudoku.clear_variables();
+            model.sudoku.reset_solver();
             if let Some(selected) = model.selected {
                 let number = match key {
                     Key::Key1 | Key::Numpad1 => 1,

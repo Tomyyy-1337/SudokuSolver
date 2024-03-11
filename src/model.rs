@@ -1,7 +1,7 @@
 use nannou::{color, prelude::*};
 use nannou_egui::{self, egui, Egui};
 
-use crate::sudoku::{self, Direction, Tile};
+use crate::sudoku::{self, Direction, Tile, Difficulty};
 
 pub struct Model {
     pub egui: Egui,
@@ -26,52 +26,39 @@ impl Model {
         self.egui.set_elapsed_time(update.since_start);
         let ctx = self.egui.begin_frame();
         egui::Window::new("Settings").show(&ctx, |ui| {
-            ui.label("Toggle solver");
-            if ui.checkbox(&mut self.sudoku.running, "Running").clicked() {
-                self.sudoku.active_indx = 0;
-                self.sudoku.step_count = 0;
-                self.sudoku.direction = Direction::Forward;
-                self.sudoku.tiles = self
-                    .sudoku
-                    .tiles
-                    .iter()
-                    .map(|t| match t {
-                        Tile::Variable(_) => Tile::Empty,
-                        Tile::Const(n) => Tile::Const(*n),
-                        Tile::Empty => Tile::Empty,
-                    })
-                    .collect();
+            ui.heading("Solver Settings:");
+            if ui.checkbox(&mut self.sudoku.running, "Run solver").clicked() {
+                self.sudoku.reset_solver();
+                self.sudoku.clear_variables();
             }
-            ui.label(format!("Steps: {}", self.sudoku.step_count));
-            ui.checkbox(&mut self.sudoku.solve_instantly, "Solve instantly");
-            if !self.sudoku.solve_instantly {
-                ui.label("Steps per frame:");
-                ui.add(
-                    egui::Slider::new(&mut self.sudoku.steps_per_frame, 0.01..=100000.0)
-                        .logarithmic(true),
-                );
-            }
-            ui.label("Clear");
+            ui.label("Steps per frame:");
+            ui.add(
+                egui::Slider::new(&mut self.sudoku.steps_per_frame, 0.01..=100000.0)
+                .logarithmic(true),
+            );
+            ui.heading("Clear Options:");
             if ui.button("Clear All").clicked() {
                 self.sudoku.tiles = vec![Tile::Empty; 81];
-                self.sudoku.active_indx = 0;
-                self.sudoku.step_count = 0;
-                self.sudoku.direction = Direction::Forward;
+                self.sudoku.reset_solver()
             }
             if ui.button("Clear Result").clicked() {
-                self.sudoku.tiles = self
-                    .sudoku
-                    .tiles
-                    .iter()
-                    .map(|t| match t {
-                        Tile::Variable(_) => Tile::Empty,
-                        Tile::Const(n) => Tile::Const(*n),
-                        Tile::Empty => Tile::Empty,
-                    })
-                    .collect();
-                self.sudoku.active_indx = 0;
-                self.sudoku.step_count = 0;
-                self.sudoku.direction = Direction::Forward;
+                self.sudoku.clear_variables();
+                self.sudoku.reset_solver()
+            }
+            
+            if ui.button("Load random Sudoku").clicked() {
+                self.sudoku.load_random();
+            }
+            ui.heading("Difficulty:");
+            egui::ComboBox::new("Difficulty", "")
+            .selected_text(self.sudoku.difficulty.to_string())
+            .show_ui(ui, |ui| {
+                for kind in [ Difficulty::Easy, Difficulty::Medium, Difficulty::Hard, Difficulty::VeryHard ] {
+                    ui.selectable_value(&mut self.sudoku.difficulty, kind, kind.to_string());
+                }
+            });
+            if self.sudoku.running || self.sudoku.active_indx > 0 {
+                ui.label(format!("Current Steps: {}", self.sudoku.step_count));
             }
         });
     }
@@ -131,22 +118,21 @@ impl Model {
                 .stroke_weight(width)
                 .color(color);
         }
-        if let Some(indx) = self.selected {
+        
+        if self.sudoku.running {
+            let x = (self.sudoku.active_indx % 9) as f32 * size / 9.0 - size / 2.0;
+            let y = (self.sudoku.active_indx / 9) as f32 * size / 9.0 - size / 2.0;
+            draw.rect()
+            .x_y(x + size / 18.0, y + size / 18.0)
+            .w_h(size / 9.0, size / 9.0)
+            .color(color::rgba(1.0, 0.0, 0.0, 0.1));
+        } else if let Some(indx) = self.selected {
             let x = (indx % 9) as f32 * size / 9.0 - size / 2.0;
             let y = (indx / 9) as f32 * size / 9.0 - size / 2.0;
             draw.rect()
                 .x_y(x + size / 18.0, y + size / 18.0)
                 .w_h(size / 9.0, size / 9.0)
                 .color(color::rgba(1.0, 1.0, 1.0, 0.05));
-        }
-
-        if self.sudoku.running {
-            let x = (self.sudoku.active_indx % 9) as f32 * size / 9.0 - size / 2.0;
-            let y = (self.sudoku.active_indx / 9) as f32 * size / 9.0 - size / 2.0;
-            draw.rect()
-                .x_y(x + size / 18.0, y + size / 18.0)
-                .w_h(size / 9.0, size / 9.0)
-                .color(color::rgba(1.0, 0.0, 0.0, 0.1));
         }
     }
 }
