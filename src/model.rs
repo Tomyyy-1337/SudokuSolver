@@ -37,7 +37,7 @@ impl Model {
             ui.label("Steps per frame:");
             ui.add(
                 egui::Slider::new(&mut self.sudoku.steps_per_frame, 0.01..=100000.0)
-                .logarithmic(true),
+                    .logarithmic(true),
             );
             ui.label(format!("Current Steps: {}", self.sudoku.step_count));
             ui.heading("Clear Options:");
