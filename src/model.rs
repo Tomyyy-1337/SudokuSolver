@@ -47,7 +47,7 @@ impl Model {
             if !self.sudoku.solve_instantly {
                 ui.label("Steps per frame:");
                 ui.add(
-                    egui::Slider::new(&mut self.sudoku.steps_per_frame, 1..=100000)
+                    egui::Slider::new(&mut self.sudoku.steps_per_frame, 0.01..=100000.0)
                         .logarithmic(true),
                 );
             }
@@ -138,6 +138,15 @@ impl Model {
                 .x_y(x + size / 18.0, y + size / 18.0)
                 .w_h(size / 9.0, size / 9.0)
                 .color(color::rgba(1.0, 1.0, 1.0, 0.05));
+        }
+
+        if self.sudoku.running {
+            let x = (self.sudoku.active_indx % 9) as f32 * size / 9.0 - size / 2.0;
+            let y = (self.sudoku.active_indx / 9) as f32 * size / 9.0 - size / 2.0;
+            draw.rect()
+                .x_y(x + size / 18.0, y + size / 18.0)
+                .w_h(size / 9.0, size / 9.0)
+                .color(color::rgba(1.0, 0.0, 0.0, 0.1));
         }
     }
 }

@@ -18,8 +18,9 @@ pub struct Sudoku {
     pub direction: Direction,
     pub running: bool,
     pub step_count: u64,
-    pub steps_per_frame: u64,
+    pub steps_per_frame: f64,
     pub solve_instantly: bool,
+    substeps: u64,
 }
 
 impl Default for Sudoku {
@@ -30,8 +31,9 @@ impl Default for Sudoku {
             direction: Direction::Forward,
             running: false,
             step_count: 0,
-            steps_per_frame: 1,
+            steps_per_frame: 1.0,
             solve_instantly: false,
+            substeps: 0,
         }
     }
 }
@@ -82,8 +84,18 @@ impl Sudoku {
     }
 
     pub fn step(&mut self) {
+        let mut steps_per_frame = self.steps_per_frame;
+        if self.steps_per_frame < 1.0 {
+            if self.substeps < (1.0 / self.steps_per_frame) as u64 {
+                self.substeps += 1;
+                return;
+            }
+            self.substeps = 0;
+            steps_per_frame = 1.0;
+        }
+
         for i in 0.. {
-            if i >= self.steps_per_frame && !self.solve_instantly {
+            if i >= steps_per_frame as u64 && !self.solve_instantly {
                 break;
             }
             if self.active_indx >= 81 {
