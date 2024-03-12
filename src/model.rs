@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::sudoku::{self, Tile};
 use nannou::{color, prelude::*};
 
@@ -11,6 +13,7 @@ pub struct Model {
     pub selected: Option<usize>,
     pub key_delay: f32,
     pub offset: f32,
+    pub past_frametimes: VecDeque<f32>,
 }
 
 impl Model {
@@ -62,6 +65,13 @@ impl Model {
         }
         self.key_delay = 0.0;
         true
+    }
+
+    pub fn update_past_frametimes(&mut self, time: f32) {
+        self.past_frametimes.push_back(time);
+        if self.past_frametimes.len() > 100 {
+            self.past_frametimes.pop_front();
+        }
     }
 
     fn draw_numbers(&self, draw: &Draw) {
@@ -140,16 +150,19 @@ impl Model {
     pub fn draw_gui(&self, draw: &Draw) {
         let title_size = (self.gui_width / 6.0) as u32;
         let sub_title_size = (self.gui_width / 8.0) as u32;
-        let text_size = (self.gui_width / 13.0) as u32;
+        let text_size = (self.gui_width / 14.0) as u32;
 
         let (x, mut y) = (
             self.size / 2.0 - self.offset + self.gui_width / 2.0 + 10.0,
             self.size / 2.0,
         );
+        let framerate = 100.0 / self.past_frametimes.iter().sum::<f32>();
         Model::add_label(draw, "Sudoku", x, &mut y, self.gui_width, title_size, color::WHITE);
         Model::add_label(draw, "Solver:", x, &mut y, self.gui_width, sub_title_size, color::WHITE);
         Model::add_label(draw, &format!("Running: {}", self.sudoku.running), x, &mut y, self.gui_width, text_size, color::WHITE);
         Model::add_label(draw, &format!("Steps per frame: {:.2}", self.sudoku.real_steps_per_frame), x, &mut y, self.gui_width, text_size, color::WHITE);
+        Model::add_label(draw, &format!("Framerate: {:.0}", framerate.round()), x, &mut y, self.gui_width, text_size, color::WHITE);
+        Model::add_label(draw, &format!("Steps per second: {:.0}", framerate.round() * self.sudoku.real_steps_per_frame as f32), x, &mut y, self.gui_width, text_size, color::WHITE);
         Model::add_label(draw, &format!("Current Steps: {}", self.sudoku.step_count), x, &mut y, self.gui_width, text_size, color::WHITE);
         Model::add_label(draw, &"[Space] Toggle solver", x, &mut y, self.gui_width, text_size, color::GREY);
         Model::add_label(draw, &"[E] Clear Result", x, &mut y, self.gui_width, text_size, color::GREY);

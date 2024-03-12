@@ -27,6 +27,7 @@ fn update(app: &App, model: &mut Model, _update: Update) {
     events::handle_keyboard_events(app, model);
     events::handle_mouse_events(app, model.window_height, model.window_width, model);
 
+    model.update_past_frametimes(app.duration.since_prev_update.as_secs_f32());
     if model.sudoku.running {
         model.sudoku.step();
     }
