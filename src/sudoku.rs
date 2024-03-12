@@ -142,7 +142,7 @@ impl Sudoku {
     pub fn change_steps_per_frame(&mut self, mult: f64) {
         self.steps_per_frame = (self.steps_per_frame * mult).max(0.01).min(100000.0);
         if self.steps_per_frame < 1.0 {
-            self.real_steps_per_frame = 1.0 / (1.0 / self.steps_per_frame).floor();
+            self.real_steps_per_frame = 1.0 / ((1.0 / self.steps_per_frame).floor() + 1.0);
         } else {
             self.real_steps_per_frame = self.steps_per_frame.floor();
         }
