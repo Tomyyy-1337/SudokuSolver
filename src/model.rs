@@ -35,7 +35,7 @@ impl Model {
         let gui_width = ((width as f32 - self.size) - 10.0)
             .max(140.0)
             .min(320.0)
-            .min(self.size / 2.0);
+            .min(self.size / 2.2);
         let offset = if size + gui_width > width as f32 - 20.0 {
             gui_width / 2.0 - (size + gui_width - width as f32) / 2.0 - 5.0
         } else {
@@ -153,7 +153,7 @@ impl Model {
         let text_size = (self.gui_width / 14.0) as u32;
 
         let (x, mut y) = (
-            self.size / 2.0 - self.offset + self.gui_width / 2.0 + 10.0,
+            self.size / 2.0 - self.offset + self.gui_width / 2.0 + 15.0,
             self.size / 2.0,
         );
         let framerate = 100.0 / self.past_frametimes.iter().sum::<f32>();
@@ -161,7 +161,6 @@ impl Model {
         Model::add_label(draw, "Solver:", x, &mut y, self.gui_width, sub_title_size, color::WHITE);
         Model::add_label(draw, &format!("Running: {}", self.sudoku.running), x, &mut y, self.gui_width, text_size, color::WHITE);
         Model::add_label(draw, &format!("Steps per frame: {:.2}", self.sudoku.real_steps_per_frame), x, &mut y, self.gui_width, text_size, color::WHITE);
-        Model::add_label(draw, &format!("Framerate: {:.0}", framerate.round()), x, &mut y, self.gui_width, text_size, color::WHITE);
         Model::add_label(draw, &format!("Steps per second: {:.0}", framerate.round() * self.sudoku.real_steps_per_frame as f32), x, &mut y, self.gui_width, text_size, color::WHITE);
         Model::add_label(draw, &format!("Current Steps: {}", self.sudoku.step_count), x, &mut y, self.gui_width, text_size, color::WHITE);
         Model::add_label(draw, &"[Space] Toggle solver", x, &mut y, self.gui_width, text_size, color::GREY);
