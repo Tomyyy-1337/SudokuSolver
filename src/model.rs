@@ -68,7 +68,7 @@ impl Model {
     }
 
     pub fn update_past_frametimes(&mut self, time: f32) {
-        self.past_frametimes.push_back(time);
+        self.past_frametimes.push_back(time - 0.00001);
         if self.past_frametimes.len() > 100 {
             self.past_frametimes.pop_front();
         }
