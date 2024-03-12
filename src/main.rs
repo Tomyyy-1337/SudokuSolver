@@ -11,7 +11,7 @@ fn main() {
 }
 
 fn model(app: &App) -> Model {
-    let width = 1200;
+    let width = 1000;
     let height = 800;
     app.new_window()
         .size(width, height)
@@ -23,10 +23,10 @@ fn model(app: &App) -> Model {
 }
 
 fn update(app: &App, model: &mut Model, _update: Update) {
-    events::update_size(app, model);
+    model.update_size(app.window_rect().w() as u32, app.window_rect().h() as u32);
     events::handle_keyboard_events(app, model);
     events::handle_mouse_events(app, model.window_height, model.window_width, model);
-    
+
     if model.sudoku.running {
         model.sudoku.step();
     }
@@ -35,6 +35,5 @@ fn update(app: &App, model: &mut Model, _update: Update) {
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
     model.draw(&draw);
-    model.draw_gui(&draw);
     draw.to_frame(app, &frame).unwrap();
 }

@@ -59,12 +59,13 @@ impl Difficulty {
 pub struct Sudoku {
     pub tiles: Vec<Tile>,
     pub active_indx: usize,
-    pub direction: Direction,
     pub running: bool,
     pub step_count: u64,
     pub steps_per_frame: f64,
-    substeps: u64,
+    pub real_steps_per_frame: f64,
     pub difficulty: Difficulty,
+    direction: Direction,
+    substeps: u64,
 }
 
 impl Default for Sudoku {
@@ -76,6 +77,7 @@ impl Default for Sudoku {
             running: false,
             step_count: 0,
             steps_per_frame: 1.0,
+            real_steps_per_frame: 1.0,
             substeps: 0,
             difficulty: Difficulty::Medium,
         }
@@ -86,9 +88,9 @@ impl Sudoku {
     /// Checks if the current state of the sudoku is valid.
     /// A State is valid if no number is repeated in any row, column or 3x3 square.
     pub fn is_valid(&self) -> bool {
-        !self.check_seen(|i, j| i + j * 9) && 
-        !self.check_seen(|i, j| i * 9 + j) && 
-        !self.check_seen(|i, j| (i % 3) * 3 + (i / 3) * 27 + (j % 3) + (j / 3) * 9)
+        !self.check_seen(|i, j| i + j * 9)
+            && !self.check_seen(|i, j| i * 9 + j)
+            && !self.check_seen(|i, j| (i % 3) * 3 + (i / 3) * 27 + (j % 3) + (j / 3) * 9)
     }
 
     /// Checks if the current row, column or 3x3 square has any repeated numbers.
@@ -139,6 +141,11 @@ impl Sudoku {
     /// Steps per frame is clamped between 0.01 and 100000.
     pub fn change_steps_per_frame(&mut self, mult: f64) {
         self.steps_per_frame = (self.steps_per_frame * mult).max(0.01).min(100000.0);
+        if self.steps_per_frame < 1.0 {
+            self.real_steps_per_frame = 1.0 / (1.0 / self.steps_per_frame).floor();
+        } else {
+            self.real_steps_per_frame = self.steps_per_frame.floor();
+        }
     }
 
     fn from_line(&self, line: &str) -> Self {
@@ -155,9 +162,8 @@ impl Sudoku {
             direction: Direction::Forward,
             running: false,
             step_count: 0,
-            steps_per_frame: self.steps_per_frame,
             substeps: 0,
-            difficulty: self.difficulty,
+            ..*self
         }
     }
 
@@ -201,19 +207,17 @@ impl Sudoku {
                     Direction::Forward => self.active_indx += 1,
                     Direction::Backward => self.active_indx -= 1,
                 },
+                Tile::Variable(_) if self.is_valid() && self.direction == Direction::Forward => {
+                    self.active_indx += 1
+                }
+                Tile::Variable(n) if n == 9 => {
+                    self.tiles[self.active_indx] = Tile::Empty;
+                    self.active_indx -= 1;
+                    self.direction = Direction::Backward;
+                }
                 Tile::Variable(n) => {
-                    if self.is_valid() && self.direction == Direction::Forward {
-                        self.active_indx += 1;
-                        continue;
-                    } 
-                    if n == 9 {
-                        self.tiles[self.active_indx] = Tile::Empty;
-                        self.active_indx -= 1;
-                        self.direction = Direction::Backward;
-                    } else {
-                        self.tiles[self.active_indx] = Tile::Variable(n + 1);
-                        self.direction = Direction::Forward;
-                    }
+                    self.tiles[self.active_indx] = Tile::Variable(n + 1);
+                    self.direction = Direction::Forward;
                 }
             }
         }
