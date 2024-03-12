@@ -53,7 +53,16 @@ pub fn handle_keyboard_events(app: &App, model: &mut Model) {
         Key::Key8 | Key::Numpad8 => write_number(model, 8),
         Key::Key9 | Key::Numpad9 => write_number(model, 9),
         Key::R if model.key_delay_over() => model.sudoku.load_random(),
-        Key::C if model.key_delay_over() => model.sudoku.clear_variables(),
+        Key::E if model.key_delay_over() && !model.sudoku.running => {
+            model.sudoku.clear_variables();
+            model.sudoku.reset_solver();
+            
+        },
+        Key::W if model.key_delay_over() && !model.sudoku.running => {
+            model.sudoku.tiles = vec![Tile::Empty; 81];
+            model.sudoku.reset_solver();
+        
+        },
         Key::Up => model.sudoku.change_steps_per_frame(1.0 + 5.0 * app.duration.since_prev_update.as_secs_f64()),
         Key::Down => model.sudoku.change_steps_per_frame(1.0 / (1.0 + 5.0 * app.duration.since_prev_update.as_secs_f64())),
         Key::Right if model.key_delay_over() => model.sudoku.difficulty = model.sudoku.difficulty.harder(),

@@ -1,10 +1,7 @@
 use nannou::{color, prelude::*};
-use nannou_egui::{self, egui, Egui};
-
-use crate::sudoku::{self, Difficulty, Tile};
+use crate::sudoku::{self, Tile};
 
 pub struct Model {
-    pub egui: Egui,
     pub window_width: u32,
     pub window_height: u32,
     pub sudoku: sudoku::Sudoku,
@@ -13,15 +10,44 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(window: &std::cell::Ref<'_, Window>, width: u32, height: u32) -> Self {
-        Model {
-            egui: Egui::from_window(&window),
+    pub fn new(width: u32, height: u32) -> Self {
+        Model {         
             window_width: width,
             window_height: height,
             selected: None,
             sudoku: sudoku::Sudoku::default(),
             key_delay: 0.0,
         }
+    }
+
+    pub fn draw_gui(&self, draw: &Draw) {
+        let size = self.window_height.min(self.window_width) as f32 + 10.0;
+        let ui_width = ((self.window_width as f32 - size) / 2.0 - 20.0).max(160.0).min(300.0);
+        let title_size = (ui_width / 6.0) as u32;
+        let sub_title_size = (ui_width / 8.0) as u32;
+        let text_size = (ui_width / 12.0) as u32;
+
+        let (x,mut y) = (
+            size / 2.0 + ui_width as f32 / 1.9,
+            size / 2.0,
+        ); 
+        add_label(draw, "Sudoku", x, &mut y, ui_width, title_size, color::WHITE);
+
+        add_label(draw, "Solver:", x, &mut y, ui_width, sub_title_size, color::WHITE);
+        add_label(draw, &format!("Running: {}", self.sudoku.running), x, &mut y, ui_width, text_size, color::WHITE);
+        add_label(draw, &format!("Steps per frame: {:.2}", self.sudoku.steps_per_frame), x, &mut y, ui_width, text_size, color::WHITE);
+        add_label(draw, &format!("Current Steps: {}", self.sudoku.step_count), x, &mut y, ui_width, text_size, color::WHITE);
+        add_label(draw, &"[Space] Toggle solver", x, &mut y, ui_width, text_size, color::GREY);
+        add_label(draw, &"[E] Clear Result", x, &mut y, ui_width, text_size, color::GREY);
+        add_label(draw, &"[Up] Faster Simulation", x, &mut y, ui_width, text_size, color::GREY);
+        add_label(draw, &"[Down] Slower Simulation", x, &mut y, ui_width, text_size, color::GREY);
+        
+        add_label(draw, "Difficulty:", x, &mut y, ui_width, sub_title_size, color::WHITE);
+        add_label(draw, &format!("Selected: {}", self.sudoku.difficulty.to_string()), x, &mut y, ui_width, text_size, color::WHITE);
+        add_label(draw, &"[Left] Easier Difficulty", x, &mut y, ui_width, text_size, color::GREY);
+        add_label(draw, &"[Right] Harder Difficulty", x, &mut y, ui_width, text_size, color::GREY);
+        add_label(draw, &"[R] Load new Sudoku", x, &mut y, ui_width, text_size, color::GREY);
+        add_label(draw, &"[W] Clear Sudoku", x, &mut y, ui_width, text_size, color::GREY);
     }
 
     /// Tracks the elapsed time since the last frame key press.
@@ -106,51 +132,15 @@ impl Model {
                 .color(color::rgba(1.0, 1.0, 1.0, 0.05));
         }
     }
+}
 
-    pub fn update_gui(&mut self, update: Update) {
-        self.egui.set_elapsed_time(update.since_start);
-        let ctx = self.egui.begin_frame();
-        egui::Window::new("Settings").show(&ctx, |ui| {
-            ui.heading("Solver Settings:");
-            if ui
-                .checkbox(&mut self.sudoku.running, "Run solver")
-                .clicked()
-            {
-                self.sudoku.reset_solver();
-                self.sudoku.clear_variables();
-            }
-            ui.label("Steps per frame:");
-            ui.add(
-                egui::Slider::new(&mut self.sudoku.steps_per_frame, 0.01..=100000.0)
-                    .logarithmic(true),
-            );
-            ui.label(format!("Current Steps: {}", self.sudoku.step_count));
-            ui.heading("Clear Options:");
-            if ui.button("Clear All").clicked() {
-                self.sudoku.tiles = vec![Tile::Empty; 81];
-                self.sudoku.reset_solver()
-            }
-            if ui.button("Clear Result").clicked() {
-                self.sudoku.clear_variables();
-                self.sudoku.reset_solver()
-            }
-
-            if ui.button("Load random Sudoku").clicked() {
-                self.sudoku.load_random();
-            }
-            ui.heading("Difficulty:");
-            egui::ComboBox::new("Difficulty", "")
-                .selected_text(self.sudoku.difficulty.to_string())
-                .show_ui(ui, |ui| {
-                    for kind in [
-                        Difficulty::Easy,
-                        Difficulty::Medium,
-                        Difficulty::Hard,
-                        Difficulty::VeryHard,
-                    ] {
-                        ui.selectable_value(&mut self.sudoku.difficulty, kind, kind.to_string());
-                    }
-                });
-        });
-    }
+fn add_label(draw: &Draw, text: &str ,x: f32, y: &mut f32, ui_width: f32, font_size: u32, color: rgb::Rgb<color::encoding::Srgb, u8>) {
+    *y -= font_size as f32 * 0.75;
+    draw.text(text)
+        .x_y(x, *y)
+        .w(ui_width)
+        .left_justify()
+        .font_size(font_size)
+        .color(color);
+    *y -= font_size as f32 * 0.75;
 }

@@ -186,10 +186,7 @@ impl Sudoku {
             steps_per_frame = 1.0;
         }
 
-        for i in 0.. {
-            if i >= steps_per_frame as u64 {
-                break;
-            }
+        for _ in 0..steps_per_frame as u32 {
             if self.active_indx >= 81 {
                 self.running = false;
                 return;
