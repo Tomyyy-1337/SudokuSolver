@@ -55,7 +55,7 @@ impl Model {
     }
 
     pub fn try_write_tile(&mut self, tile: Tile) {
-        if self.sudoku.running {
+        if self.sudoku.is_running() {
             return;
         }
         self.sudoku.clear_variables();
@@ -138,7 +138,7 @@ impl Model {
                 .color(color);
         }
 
-        if self.sudoku.running {
+        if self.sudoku.is_running() {
             let x = (self.sudoku.active_indx % 9) as f32 * self.size / 9.0 - self.size / 2.0;
             let y = (self.sudoku.active_indx / 9) as f32 * self.size / 9.0 - self.size / 2.0;
             draw.rect()
@@ -169,7 +169,7 @@ impl Model {
         self.add_label(draw, "Sudoku", &mut y, title_size, self.theme.primary_color);
 
         self.add_label(draw, "Solver:", &mut y, sub_title_size, self.theme.primary_color);
-        self.add_label(draw, &format!("Running: {}", self.sudoku.running), &mut y, text_size, self.theme.primary_color);
+        self.add_label(draw, &format!("State: {}", self.sudoku.state.to_string()), &mut y, text_size, self.theme.primary_color);
         self.add_label(draw, &format!("Steps per frame: {:.2}", self.sudoku.real_steps_per_frame), &mut y, text_size, self.theme.primary_color);
         self.add_label(draw, &format!("Steps per second: {:.0}", self.fps * self.sudoku.real_steps_per_frame as f32), &mut y, text_size, self.theme.primary_color);
         self.add_label(draw, &format!("Current Steps: {}", self.sudoku.step_count), &mut y, text_size, self.theme.primary_color);

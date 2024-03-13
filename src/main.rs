@@ -1,9 +1,10 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 use nannou::prelude::*;
 
 mod events;
 mod model;
 mod sudoku;
+use crate::sudoku::SolverState;
 mod theme;
 use model::Model;
 
@@ -32,7 +33,7 @@ fn update(app: &App, model: &mut Model, _update: Update) {
     events::handle_mouse_button_events(app, model.window_height, model.window_width, model);
 
     model.update_size(app.window_rect().w() as u32, app.window_rect().h() as u32);
-    if model.sudoku.running {
+    if let SolverState::Running = model.sudoku.state {
         model.sudoku.step();
     }
 }

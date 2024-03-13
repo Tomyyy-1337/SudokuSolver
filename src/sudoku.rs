@@ -11,7 +11,7 @@ pub enum Direction {
     Backward,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Tile {
     Empty,
     Variable(u8),
@@ -55,12 +55,31 @@ impl Difficulty {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum SolverState {
+    Idle,
+    Running,
+    SolutionFound,
+    NoSolution,
+}
+
+impl SolverState {
+    pub fn to_string(&self) -> &str {
+        match self {
+            SolverState::Running => "Running",
+            SolverState::Idle => "Idle",
+            SolverState::SolutionFound => "Solution Found",
+            SolverState::NoSolution => "No Solution",
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Sudoku {
     pub tiles: [Tile; 81],
     pub difficulty: Difficulty,
     pub active_indx: usize,
-    pub running: bool,
+    pub state: SolverState,
     pub step_count: u64,
     pub real_steps_per_frame: f32,
     direction: Direction,
@@ -68,13 +87,14 @@ pub struct Sudoku {
     substeps: u8,
 }
 
+
 impl Default for Sudoku {
     fn default() -> Self {
         Sudoku {
             tiles: [Tile::Empty; 81],
             active_indx: 0,
             direction: Direction::Forward,
-            running: false,
+            state: SolverState::Idle,
             step_count: 0,
             steps_per_frame: 1.0,
             real_steps_per_frame: 1.0,
@@ -115,6 +135,7 @@ impl Sudoku {
         self.active_indx = 0;
         self.step_count = 0;
         self.direction = Direction::Forward;
+        self.state = SolverState::Idle;
     }
 
     pub fn clear_variables(&mut self) {
@@ -162,11 +183,15 @@ impl Sudoku {
                 .unwrap(),
             active_indx: 0,
             direction: Direction::Forward,
-            running: false,
+            state: SolverState::Idle,
             step_count: 0,
             substeps: 0,
             ..*self
         }
+    }
+
+    pub fn is_running(&self) -> bool {
+        matches!(self.state, SolverState::Running)
     }
 
     /// Tries to insert a tile at the given index.
@@ -193,10 +218,13 @@ impl Sudoku {
             self.substeps = 0;
             steps_per_frame = 1.0;
         }
-
         for _ in 0..steps_per_frame as u32 {
             if self.active_indx >= 81 {
-                self.running = false;
+            self.state = if !self.tiles.contains(&Tile::Empty) && self.is_valid() {
+                    SolverState::SolutionFound
+                } else {
+                    SolverState::NoSolution
+                };
                 return;
             }
             self.step_count += 1;

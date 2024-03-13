@@ -1,9 +1,10 @@
 use crate::model::Model;
+use crate::sudoku::SolverState;
 use crate::sudoku::Tile;
 use nannou::prelude::*;
 
 pub fn mouse_moved(_app: &App, model: &mut Model, pos: Point2) {
-    if model.sudoku.running {
+    if model.sudoku.is_running() {
         return;
     }
     let size = model.window_height.min(model.window_width) as f32 - 10.0;
@@ -18,7 +19,7 @@ pub fn mouse_moved(_app: &App, model: &mut Model, pos: Point2) {
 }
 
 pub fn handle_mouse_button_events(app: &App, window_height: u32, window_width: u32, model: &mut Model) {
-    if model.sudoku.running {
+    if model.sudoku.is_running() {
         return;
     }
     let size = window_height.min(window_width) as f32;
@@ -40,16 +41,20 @@ pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
     match key {
         Key::F11 => app.main_window().set_fullscreen(!app.main_window().is_fullscreen()),
         Key::Return | Key::Space => {
-            model.sudoku.reset_solver();
             model.sudoku.clear_variables();
-            model.sudoku.running = !model.sudoku.running
+            let state = match model.sudoku.state {
+                SolverState::Running => SolverState::Idle,
+                SolverState::Idle | SolverState::NoSolution | SolverState::SolutionFound => SolverState::Running,
+            };
+            model.sudoku.reset_solver();
+            model.sudoku.state = state;
         }
         Key::R => model.sudoku.load_random(),
-        Key::E if !model.sudoku.running => {
+        Key::E if !model.sudoku.is_running() => {
             model.sudoku.clear_variables();
             model.sudoku.reset_solver();
         }
-        Key::W if !model.sudoku.running => {
+        Key::W if !model.sudoku.is_running() => {
             model.sudoku.tiles = [Tile::Empty; 81];
             model.sudoku.reset_solver();
         }
