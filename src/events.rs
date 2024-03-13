@@ -32,17 +32,32 @@ pub fn handle_mouse_events(app: &App, window_height: u32, window_width: u32, mod
     });
 }
 
-pub fn handle_keyboard_events(app: &App, model: &mut Model) {
-    model.key_delay += app.duration.since_prev_update.as_secs_f32();
-    app.keys.down.iter().for_each(|key| match key {
-        Key::F11 if model.key_delay_over() => app
-            .main_window()
-            .set_fullscreen(!app.main_window().is_fullscreen()),
-        Key::Return | Key::Space if model.key_delay_over() => {
+pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
+    match key {
+        Key::F11 => app.main_window().set_fullscreen(!app.main_window().is_fullscreen()),
+        Key::Return | Key::Space => {
             model.sudoku.reset_solver();
             model.sudoku.clear_variables();
             model.sudoku.running = !model.sudoku.running
         }
+        Key::R => model.sudoku.load_random(),
+        Key::E if !model.sudoku.running => {
+            model.sudoku.clear_variables();
+            model.sudoku.reset_solver();
+        }
+        Key::W if !model.sudoku.running => {
+            model.sudoku.tiles = [Tile::Empty; 81];
+            model.sudoku.reset_solver();
+        }
+        Key::Right => model.sudoku.difficulty = model.sudoku.difficulty.harder(),
+        Key::Left => model.sudoku.difficulty = model.sudoku.difficulty.easier(),
+        Key::T => model.update_theme(model.theme.next()),
+        _ => (),
+    }
+}
+
+pub fn handle_continious_key_inputs(app: &App, model: &mut Model) {
+    app.keys.down.iter().for_each(|key| match key {
         Key::Back | Key::Delete => {
             if let Some(selected) = model.selected {
                 model.sudoku.try_insert(selected, Tile::Empty);
@@ -58,27 +73,12 @@ pub fn handle_keyboard_events(app: &App, model: &mut Model) {
         Key::Key8 | Key::Numpad8 => model.try_write_tile(Tile::Const(8)),
         Key::Key9 | Key::Numpad9 => model.try_write_tile(Tile::Const(9)),
         Key::Key0 | Key::Numpad0 => model.try_write_tile(Tile::Empty),
-        Key::R if model.key_delay_over() => model.sudoku.load_random(),
-        Key::E if model.key_delay_over() && !model.sudoku.running => {
-            model.sudoku.clear_variables();
-            model.sudoku.reset_solver();
-        }
-        Key::W if model.key_delay_over() && !model.sudoku.running => {
-            model.sudoku.tiles = [Tile::Empty; 81];
-            model.sudoku.reset_solver();
-        }
         Key::Up => model
             .sudoku
             .change_steps_per_frame(1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),
         Key::Down => model.sudoku.change_steps_per_frame(
             1.0 / (1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),
         ),
-        Key::Right if model.key_delay_over() => {
-            model.sudoku.difficulty = model.sudoku.difficulty.harder()
-        }
-        Key::Left if model.key_delay_over() => {
-            model.sudoku.difficulty = model.sudoku.difficulty.easier()
-        }
         _ => (),
     });
 }
