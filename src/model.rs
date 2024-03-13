@@ -185,8 +185,8 @@ impl Model {
         self.add_label(draw, &"[W] Clear Sudoku", &mut y, text_size, self.theme.secondary_color);
 
         self.add_label(draw, "Settings:", &mut y, sub_title_size, self.theme.primary_color);
-        self.add_label(draw, &format!("Color ThemeType: {}", self.theme.theme_type.to_string()), &mut y, text_size, self.theme.primary_color);
-        self.add_label(draw, &"[T] Change Color ThemeType", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &format!("Color Theme: {}", self.theme.theme_type.to_string()), &mut y, text_size, self.theme.primary_color);
+        self.add_label(draw, &"[T] Change Color Theme", &mut y, text_size, self.theme.secondary_color);
         self.add_label(draw, &"[F11] Toggle Fullscreen", &mut y, text_size, self.theme.secondary_color);
         self.add_label(draw, &"[Escape] Close application", &mut y, text_size, self.theme.secondary_color);
 
