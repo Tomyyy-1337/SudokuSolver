@@ -190,7 +190,6 @@ impl Model {
                 .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
                 .w_h(self.size / 9.0, self.size / 9.0)
                 .color(primary_color_with_alpha);
-            
         }
     }
 

@@ -106,32 +106,6 @@ impl Default for Sudoku {
 }
 
 impl Sudoku {
-    /// Checks if the current state of the sudoku is valid.
-    /// A State is valid if no number is repeated in any row, column or 3x3 square.
-    pub fn is_valid(&self) -> bool {
-        !self.check_seen(|i, j| i + j * 9)
-        && !self.check_seen(|i, j| i * 9 + j)
-        && !self.check_seen(|i, j| (i % 3) * 3 + (i / 3) * 27 + (j % 3) + (j / 3) * 9)
-    }
-
-    /// Checks if the current row, column or 3x3 square has any repeated numbers.
-    /// Returns true if there are any repeated numbers, false otherwise.
-    /// The function takes a closure that returns the index of the tile to check.
-    fn check_seen(&self, function: fn(usize, usize) -> usize) -> bool {
-        let mut seen: u16;
-        for i in 0..9 {
-            seen = 0;
-            for indx in (0..9).map(|j| function(i, j)) {
-                match self.tiles[indx] {
-                    Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) if seen >> n & 1 == 1 => return true,
-                    Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) => seen |= 1 << n,
-                    _ => (),
-                }
-            }
-        }
-        false
-    }
-
     pub fn next_available_number(&self, indx: usize) -> Option<u8> {
         let available = self.avaliable_numbers(indx);
         let current = match self.tiles[indx] {
@@ -158,11 +132,11 @@ impl Sudoku {
             | indx: usize, i: usize | indx % 9 + i * 9,
             | indx: usize, i: usize | (indx % 9 ) / 3 * 3 + (indx / 9) / 3  * 27 + (i % 3) + (i / 3) * 9,
         ];
-        for i in 0..9 {
-            for f in functions.iter() {
-                seen |= match self.tiles[f(indx, i)] {
-                    Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) => 1 << n,
-                    _ => 0,
+        for f in functions.iter() {
+            for i in 0..9 {
+                match self.tiles[f(indx, i)] {
+                    Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) => seen |= 1 << n,
+                    _ => (),
                 };
             }
         }
@@ -232,8 +206,6 @@ impl Sudoku {
         matches!(self.state, SolverState::Running)
     }
 
-    /// Tries to insert a tile at the given index.
-    /// If the insertion results in an invalid state, the tile is not inserted.
     pub fn try_insert(&mut self, indx: usize, tile: Tile) {
         match tile {
             Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) if self.is_available(indx, n) => self.tiles[indx] = tile,
@@ -242,23 +214,24 @@ impl Sudoku {
         }
     }
 
-    /// Backtracking Sudoku solver.
-    /// Itteraively solves the sudoku by trying to insert a number at each empty tile.
-    /// If the insertion results in an invalid state, the tile is reset and the next number is tried.
-    /// If no number can be inserted, the function backtracks to the previous tile and tries the next number.
-    pub fn step(&mut self) {
-        let mut steps_per_frame = self.steps_per_frame;
+    fn get_steps(&mut self) -> u32 {
         if self.steps_per_frame < 1.0 {
             if self.substeps < (1.0 / self.steps_per_frame) as u8 {
                 self.substeps += 1;
-                return;
+                0
+            } else {
+                self.substeps = 0;
+                1
             }
-            self.substeps = 0;
-            steps_per_frame = 1.0;
+        } else {
+            self.real_steps_per_frame as u32
         }
-        for _ in 0..steps_per_frame as u32 {
+    }
+
+    pub fn step(&mut self) {
+        for _ in 0..self.get_steps() {
             if self.active_indx >= 81 {
-            self.state = if !self.tiles.contains(&Tile::Empty) && self.is_valid() {
+                self.state = if !self.tiles.contains(&Tile::Empty) {
                     SolverState::SolutionFound
                 } else {
                     SolverState::NoSolution
@@ -268,10 +241,6 @@ impl Sudoku {
             self.step_count += 1;
             let next_number = self.next_available_number(self.active_indx);
             match self.tiles[self.active_indx] {
-                Tile::Empty if next_number.is_some() => {
-                    self.tiles[self.active_indx] = Tile::SolverVariable(next_number.unwrap());
-                    self.direction = Direction::Forward;
-                }
                 Tile::Const(_) | Tile::PlayerVariable(_) => match self.direction {
                     Direction::Forward => self.active_indx += 1,
                     Direction::Backward => self.active_indx -= 1,
@@ -279,7 +248,7 @@ impl Sudoku {
                 Tile::SolverVariable(_) if self.direction == Direction::Forward => {
                     self.active_indx += 1
                 }
-                Tile::SolverVariable(n) if n < 9 && next_number.is_some() => {
+                Tile::SolverVariable(_) | Tile::Empty if next_number.is_some() => {
                     self.tiles[self.active_indx] = Tile::SolverVariable(next_number.unwrap());
                     self.direction = Direction::Forward;
                 }

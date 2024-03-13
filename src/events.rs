@@ -43,8 +43,8 @@ pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
         Key::Return | Key::Space => {
             model.sudoku.clear_variables();
             let state = match model.sudoku.state {
-                SolverState::Running => SolverState::Idle,
-                SolverState::Idle | SolverState::NoSolution | SolverState::SolutionFound => SolverState::Running,
+                SolverState::Running | SolverState::NoSolution | SolverState::SolutionFound => SolverState::Idle,
+                SolverState::Idle  => SolverState::Running,
             };
             model.sudoku.reset_solver();
             model.sudoku.state = state;
