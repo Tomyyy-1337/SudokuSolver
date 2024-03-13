@@ -46,7 +46,9 @@ pub struct Model {
     pub theme: Theme,
     primary_color: rgb::Rgb<color::encoding::Srgb, u8>,
     secondary_color: rgb::Rgb<color::encoding::Srgb, u8>,
+    tile_color: rgb::Rgb<color::encoding::Srgb, u8>,
     background_color: rgb::Rgb<color::encoding::Srgb, u8>,
+    theme_alpha: u8,
 }
 
 impl Model {
@@ -62,18 +64,24 @@ impl Model {
         match theme {
             Theme::Light => {
                 self.primary_color = color::BLACK;
-                self.secondary_color = color::GREY;
-                self.background_color = color::WHITE;
+                self.secondary_color = color::Rgb8::from_components((120, 120, 120));
+                self.tile_color = color::Rgb8::from_components((242, 243, 245));
+                self.background_color = color::Rgb8::from_components((245, 245, 245));
+                self.theme_alpha = 60;
             }
             Theme::Dark => {
                 self.primary_color = color::WHITE;
                 self.secondary_color = color::GREY;
+                self.tile_color = color::BLACK;
                 self.background_color = color::BLACK;
+                self.theme_alpha = 15;
             }
             Theme::Discord => {
-                self.primary_color = color::Rgb8::from_components((236, 237, 239));
+                self.primary_color = color::Rgb8::from_components((242, 243, 245));
                 self.secondary_color = color::Rgb8::from_components((181, 186, 193));
+                self.tile_color = color::Rgb8::from_components((43, 45, 49));
                 self.background_color = color::Rgb8::from_components((30, 31, 34));
+                self.theme_alpha = 20;
             }
         }
     }
@@ -89,9 +97,9 @@ impl Model {
         self.application_ticks += 1;
         let size = height.min(width) as f32 - 10.0;
         let gui_width = ((width as f32 - self.size) - 10.0)
-            .max(140.0)
             .min(320.0)
-            .min(self.size / 2.2);
+            .min(self.size / 2.7)
+            .max(120.0);
         let offset = if size + gui_width > width as f32 - 20.0 {
             gui_width / 2.0 - (size + gui_width - width as f32) / 2.0 - 5.0
         } else {
@@ -149,6 +157,11 @@ impl Model {
     }
 
     fn draw_grid(&self, draw: &Draw) {
+        draw.rect()
+            .x_y(0.0 - self.offset, 0.0)
+            .z(0.0)
+            .w_h(self.size, self.size)
+            .color(self.tile_color);
         for i in 0..=9 {
             let (color, z) = if i % 3 == 0 { 
                 (self.primary_color, 2.0) 
@@ -188,13 +201,14 @@ impl Model {
             draw.rect()
                 .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
                 .w_h(self.size / 9.0, self.size / 9.0)
-                .color(color::rgba(1.0, 0.0, 0.0, 0.1));
+                .z(0.0)
+                .color(color::rgba(255, 0, 0, self.theme_alpha));
         } else if let Some(indx) = self.selected {
             let x = (indx % 9) as f32 * self.size / 9.0 - self.size / 2.0;
             let y = (indx / 9) as f32 * self.size / 9.0 - self.size / 2.0;
             let primary_color_with_alpha = Rgba {
                 color: self.primary_color,
-                alpha: 10,
+                alpha: self.theme_alpha,
             };
             draw.rect()
                 .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
@@ -231,10 +245,11 @@ impl Model {
         Model::add_label(draw, &"[R] Load new Sudoku", x, &mut y, self.gui_width, text_size, self.secondary_color);
         Model::add_label(draw, &"[W] Clear Sudoku", x, &mut y, self.gui_width, text_size, self.secondary_color);
 
-        Model::add_label(draw, "Settigns:", x, &mut y, self.gui_width, sub_title_size, self.primary_color);
+        Model::add_label(draw, "Settings:", x, &mut y, self.gui_width, sub_title_size, self.primary_color);
         Model::add_label(draw, &format!("Color Theme: {}", self.theme.to_string()), x, &mut y, self.gui_width, text_size, self.primary_color);
         Model::add_label(draw, &"[T] Change Color Theme", x, &mut y, self.gui_width, text_size, self.secondary_color);
-
+        Model::add_label(draw, &"[F11] Toggle Fullscreen", x, &mut y, self.gui_width, text_size, self.secondary_color);
+        Model::add_label(draw, &"[Escape] Close application", x, &mut y, self.gui_width, text_size, self.secondary_color);
     }
 
     fn add_label(
