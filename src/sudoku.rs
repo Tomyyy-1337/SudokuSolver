@@ -58,13 +58,13 @@ impl Difficulty {
 #[derive(Clone)]
 pub struct Sudoku {
     pub tiles: [Tile; 81],
+    pub difficulty: Difficulty,
     pub active_indx: usize,
     pub running: bool,
     pub step_count: u64,
-    pub steps_per_frame: f32,
     pub real_steps_per_frame: f32,
-    pub difficulty: Difficulty,
     direction: Direction,
+    steps_per_frame: f32,
     substeps: u8,
 }
 

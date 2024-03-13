@@ -1,93 +1,35 @@
 use std::collections::VecDeque;
-
-use crate::sudoku::{self, Tile};
 use nannou::{color::{self, rgb::Rgba}, prelude::*};
 
-#[derive(Clone, Copy, Default)]
-pub enum Theme {
-    Light,
-    #[default]
-    Dark,
-    Discord,
-}
-
-impl Theme {
-    pub fn next(&self) -> Self {
-        match self {
-            Theme::Dark => Theme::Discord,
-            Theme::Discord => Theme::Light,
-            Theme::Light => Theme::Dark,
-
-        }
-    }
-
-    pub fn to_string(&self) -> &str {
-        match self {
-            Theme::Light => "Light",
-            Theme::Dark => "Dark",
-            Theme::Discord => "Discord",
-        }
-    }
-}
+use crate::sudoku::{self, Tile};
+use crate::theme::{Theme, ThemeType};
 
 #[derive(Default)]
 pub struct Model {
+    pub sudoku: sudoku::Sudoku,
+    pub theme: Theme,
     pub window_width: u32,
     pub window_height: u32,
-    pub size: f32,
-    pub gui_width: f32,
-    pub sudoku: sudoku::Sudoku,
-    pub selected: Option<usize>,
     pub offset: f32,
+    pub selected: Option<usize>,
+    size: f32,
+    gui_width: f32,
     past_frametimes: VecDeque<f32>,
     past_frametimes_sum: f32,
-    pub fps: f32,
-    pub application_ticks: u64,
-    pub theme: Theme,
-    primary_color: rgb::Rgb<color::encoding::Srgb, u8>,
-    secondary_color: rgb::Rgb<color::encoding::Srgb, u8>,
-    tile_color: rgb::Rgb<color::encoding::Srgb, u8>,
-    background_color: rgb::Rgb<color::encoding::Srgb, u8>,
-    theme_alpha: u8,
+    fps: f32,
+    application_ticks: u64,
 }
 
 impl Model {
     pub fn new(width: u32, height: u32) -> Self {
         let mut model = Model::default();
         model.update_size(width, height);
-        model.update_theme(Theme::Dark);
+        model.theme.update(ThemeType::Dark);
         model
     }
 
-    pub fn update_theme(&mut self, theme: Theme) {
-        self.theme = theme;
-        match theme {
-            Theme::Light => {
-                self.primary_color = color::BLACK;
-                self.secondary_color = color::Rgb8::from_components((120, 120, 120));
-                self.tile_color = color::Rgb8::from_components((242, 243, 245));
-                self.background_color = color::Rgb8::from_components((245, 245, 245));
-                self.theme_alpha = 60;
-            }
-            Theme::Dark => {
-                self.primary_color = color::WHITE;
-                self.secondary_color = color::GREY;
-                self.tile_color = color::BLACK;
-                self.background_color = color::BLACK;
-                self.theme_alpha = 15;
-            }
-            Theme::Discord => {
-                self.primary_color = color::Rgb8::from_components((242, 243, 245));
-                self.secondary_color = color::Rgb8::from_components((181, 186, 193));
-                self.tile_color = color::Rgb8::from_components((43, 45, 49));
-                self.background_color = color::Rgb8::from_components((30, 31, 34));
-                self.theme_alpha = 20;
-            }
-        }
-    }
-
     pub fn draw(&self, draw: &Draw) {
-        draw.background().color(self.background_color);
+        draw.background().color(self.theme.background_color);
         self.draw_grid(draw);
         self.draw_numbers(draw);
         self.draw_gui(draw);
@@ -144,13 +86,13 @@ impl Model {
                     draw.text(&n.to_string())
                         .x_y(x, y)
                         .font_size(self.size as u32 / 16)
-                        .color(self.secondary_color);
+                        .color(self.theme.secondary_color);
                 }
                 Tile::Const(n) => {
                     draw.text(&n.to_string())
                         .x_y(x, y)
                         .font_size(self.size as u32 / 16)
-                        .color(self.primary_color);
+                        .color(self.theme.primary_color);
                 }
             }
         });
@@ -161,12 +103,12 @@ impl Model {
             .x_y(0.0 - self.offset, 0.0)
             .z(0.0)
             .w_h(self.size, self.size)
-            .color(self.tile_color);
+            .color(self.theme.tile_color);
         for i in 0..=9 {
             let (color, z) = if i % 3 == 0 { 
-                (self.primary_color, 2.0) 
+                (self.theme.primary_color, 2.0) 
             } else { 
-                (self.secondary_color, 1.0) 
+                (self.theme.secondary_color, 1.0) 
             };
             let width = if i % 3 == 0 { 2.0 } else { 1.0 };
             draw.line()
@@ -202,13 +144,13 @@ impl Model {
                 .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
                 .w_h(self.size / 9.0, self.size / 9.0)
                 .z(0.0)
-                .color(color::rgba(255, 0, 0, self.theme_alpha));
+                .color(color::rgba(255, 0, 0, self.theme.theme_alpha));
         } else if let Some(indx) = self.selected {
             let x = (indx % 9) as f32 * self.size / 9.0 - self.size / 2.0;
             let y = (indx / 9) as f32 * self.size / 9.0 - self.size / 2.0;
             let primary_color_with_alpha = Rgba {
-                color: self.primary_color,
-                alpha: self.theme_alpha,
+                color: self.theme.primary_color,
+                alpha: self.theme.theme_alpha,
             };
             draw.rect()
                 .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
@@ -217,54 +159,52 @@ impl Model {
         }
     }
 
-    pub fn draw_gui(&self, draw: &Draw) {
+    fn draw_gui(&self, draw: &Draw) {
         let title_size = (self.gui_width / 6.0) as u32;
         let sub_title_size = (self.gui_width / 8.0) as u32;
         let text_size = (self.gui_width / 14.0) as u32;
 
-        let (x, mut y) = (
-            self.size / 2.0 - self.offset + self.gui_width / 2.0 + 15.0,
-            self.size / 2.0,
-        );
-        Model::add_label(draw, "Sudoku", x, &mut y, self.gui_width, title_size, self.primary_color);
+        let mut y = self.size / 2.0;
+        self.add_label(draw, "Sudoku", &mut y, title_size, self.theme.primary_color);
 
-        Model::add_label(draw, "Solver:", x, &mut y, self.gui_width, sub_title_size, self.primary_color);
-        Model::add_label(draw, &format!("Running: {}", self.sudoku.running), x, &mut y, self.gui_width, text_size, self.primary_color);
-        Model::add_label(draw, &format!("Steps per frame: {:.2}", self.sudoku.real_steps_per_frame), x, &mut y, self.gui_width, text_size, self.primary_color);
-        Model::add_label(draw, &format!("Steps per second: {:.0}", self.fps * self.sudoku.real_steps_per_frame as f32), x, &mut y, self.gui_width, text_size, self.primary_color);
-        Model::add_label(draw, &format!("Current Steps: {}", self.sudoku.step_count), x, &mut y, self.gui_width, text_size, self.primary_color);
-        Model::add_label(draw, &"[Space] Toggle solver", x, &mut y, self.gui_width, text_size, self.secondary_color);
-        Model::add_label(draw, &"[E] Clear Result", x, &mut y, self.gui_width, text_size, self.secondary_color);
-        Model::add_label(draw, &"[Up] Step faster", x, &mut y, self.gui_width, text_size, self.secondary_color);
-        Model::add_label(draw, &"[Down] Step slower", x, &mut y, self.gui_width, text_size, self.secondary_color);
+        self.add_label(draw, "Solver:", &mut y, sub_title_size, self.theme.primary_color);
+        self.add_label(draw, &format!("Running: {}", self.sudoku.running), &mut y, text_size, self.theme.primary_color);
+        self.add_label(draw, &format!("Steps per frame: {:.2}", self.sudoku.real_steps_per_frame), &mut y, text_size, self.theme.primary_color);
+        self.add_label(draw, &format!("Steps per second: {:.0}", self.fps * self.sudoku.real_steps_per_frame as f32), &mut y, text_size, self.theme.primary_color);
+        self.add_label(draw, &format!("Current Steps: {}", self.sudoku.step_count), &mut y, text_size, self.theme.primary_color);
+        self.add_label(draw, &"[Space] Toggle solver", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &"[E] Clear Result", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &"[Up] Step faster", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &"[Down] Step slower", &mut y, text_size, self.theme.secondary_color);
         
-        Model::add_label(draw, "Difficulty:", x, &mut y, self.gui_width, sub_title_size, self.primary_color);
-        Model::add_label(draw, &format!("Selected: {}", self.sudoku.difficulty.to_string()), x, &mut y, self.gui_width, text_size, self.primary_color);
-        Model::add_label(draw, &"[Left] Easier Difficulty", x, &mut y, self.gui_width, text_size, self.secondary_color);
-        Model::add_label(draw, &"[Right] Harder Difficulty", x, &mut y, self.gui_width, text_size, self.secondary_color);
-        Model::add_label(draw, &"[R] Load new Sudoku", x, &mut y, self.gui_width, text_size, self.secondary_color);
-        Model::add_label(draw, &"[W] Clear Sudoku", x, &mut y, self.gui_width, text_size, self.secondary_color);
+        self.add_label(draw, "Difficulty:", &mut y, sub_title_size, self.theme.primary_color);
+        self.add_label(draw, &format!("Selected: {}", self.sudoku.difficulty.to_string()), &mut y, text_size, self.theme.primary_color);
+        self.add_label(draw, &"[Left] Easier Difficulty", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &"[Right] Harder Difficulty", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &"[R] Load new Sudoku", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &"[W] Clear Sudoku", &mut y, text_size, self.theme.secondary_color);
 
-        Model::add_label(draw, "Settings:", x, &mut y, self.gui_width, sub_title_size, self.primary_color);
-        Model::add_label(draw, &format!("Color Theme: {}", self.theme.to_string()), x, &mut y, self.gui_width, text_size, self.primary_color);
-        Model::add_label(draw, &"[T] Change Color Theme", x, &mut y, self.gui_width, text_size, self.secondary_color);
-        Model::add_label(draw, &"[F11] Toggle Fullscreen", x, &mut y, self.gui_width, text_size, self.secondary_color);
-        Model::add_label(draw, &"[Escape] Close application", x, &mut y, self.gui_width, text_size, self.secondary_color);
+        self.add_label(draw, "Settings:", &mut y, sub_title_size, self.theme.primary_color);
+        self.add_label(draw, &format!("Color ThemeType: {}", self.theme.theme_type.to_string()), &mut y, text_size, self.theme.primary_color);
+        self.add_label(draw, &"[T] Change Color ThemeType", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &"[F11] Toggle Fullscreen", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &"[Escape] Close application", &mut y, text_size, self.theme.secondary_color);
+
     }
 
     fn add_label(
+        &self,
         draw: &Draw,
         text: &str,
-        x: f32,
         y: &mut f32,
-        ui_width: f32,
         font_size: u32,
         color: rgb::Rgb<color::encoding::Srgb, u8>,
     ) {
+        let x = self.size / 2.0 - self.offset + self.gui_width / 2.0 + 15.0;
         *y -= font_size as f32 * 0.75;
         draw.text(text)
             .x_y(x, *y)
-            .w(ui_width)
+            .w(self.gui_width)
             .left_justify()
             .font_size(font_size)
             .color(color);

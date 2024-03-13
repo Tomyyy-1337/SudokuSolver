@@ -2,21 +2,25 @@ use crate::model::Model;
 use crate::sudoku::Tile;
 use nannou::prelude::*;
 
-pub fn handle_mouse_events(app: &App, window_height: u32, window_width: u32, model: &mut Model) {
+pub fn mouse_moved(_app: &App, model: &mut Model, pos: Point2) {
     if model.sudoku.running {
         return;
     }
-    let mouse_pos = app.mouse.position();
-    let size = window_height.min(window_width) as f32 - 10.0;
-    if (mouse_pos.x + model.offset).abs() < size / 2.0 && mouse_pos.y.abs() < size / 2.0 {
-        let x = ((mouse_pos.x + model.offset + size / 2.0) / (size / 9.0)) as usize;
-        let y = ((mouse_pos.y + size / 2.0) / (size / 9.0)) as usize;
+    let size = model.window_height.min(model.window_width) as f32 - 10.0;
+    if (pos.x + model.offset).abs() < size / 2.0 && pos.y.abs() < size / 2.0 {
+        let x = ((pos.x + model.offset + size / 2.0) / (size / 9.0)) as usize;
+        let y = ((pos.y + size / 2.0) / (size / 9.0)) as usize;
         let selected_index = y * 9 + x;
         model.selected = Some(selected_index);
     } else {
         model.selected = None;
     }
+}
 
+pub fn handle_mouse_button_events(app: &App, window_height: u32, window_width: u32, model: &mut Model) {
+    if model.sudoku.running {
+        return;
+    }
     let size = window_height.min(window_width) as f32;
     app.mouse.buttons.pressed().for_each(|button| match button {
         (MouseButton::Left | MouseButton::Right, v)
@@ -34,7 +38,9 @@ pub fn handle_mouse_events(app: &App, window_height: u32, window_width: u32, mod
 
 pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
     match key {
-        Key::F11 => app.main_window().set_fullscreen(!app.main_window().is_fullscreen()),
+        Key::F11 => app
+            .main_window()
+            .set_fullscreen(!app.main_window().is_fullscreen()),
         Key::Return | Key::Space => {
             model.sudoku.reset_solver();
             model.sudoku.clear_variables();
@@ -51,7 +57,7 @@ pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
         }
         Key::Right => model.sudoku.difficulty = model.sudoku.difficulty.harder(),
         Key::Left => model.sudoku.difficulty = model.sudoku.difficulty.easier(),
-        Key::T => model.update_theme(model.theme.next()),
+        Key::T => model.theme.next(),
         _ => (),
     }
 }
@@ -68,14 +74,27 @@ pub fn handle_continious_key_inputs(app: &App, model: &mut Model) {
         Key::Key8 | Key::Numpad8 => model.try_write_tile(Tile::Const(8)),
         Key::Key9 | Key::Numpad9 => model.try_write_tile(Tile::Const(9)),
         Key::Key0 | Key::Numpad0 | Key::Back | Key::Delete => model.try_write_tile(Tile::Empty),
-        Key::Up => model.sudoku.change_steps_per_frame(1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),
-        Key::Down => model.sudoku.change_steps_per_frame(1.0 / (1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),),
+        Key::Up => model
+            .sudoku
+            .change_steps_per_frame(1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),
+        Key::Down => model.sudoku.change_steps_per_frame(
+            1.0 / (1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),
+        ),
         _ => (),
     });
 }
 
-pub fn handle_mouse_wheel_events(_app: &App, model: &mut Model, dt: MouseScrollDelta, _phase: TouchPhase) {
+pub fn handle_mouse_wheel_events(
+    _app: &App,
+    model: &mut Model,
+    dt: MouseScrollDelta,
+    _phase: TouchPhase,
+) {
     if let MouseScrollDelta::LineDelta(_x, y) = dt {
         model.sudoku.change_steps_per_frame(1.0 + 0.5 * y as f32);
     }
+}
+
+pub fn window_resized(_app: &App, model: &mut Model, dim: Vec2) {
+    model.update_size(dim.x as u32, dim.y as u32);
 }
