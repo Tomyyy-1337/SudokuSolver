@@ -89,20 +89,41 @@ impl Model {
                         if avaliable >> n & 2 == 0 {
                             draw.text(&format!("{}", n + 1))
                                 .x_y(x + (n % 3 - 1) as f32 * self.size / 40.0, y + (n / 3 - 1) as f32 * self.size / 40.0 - self.size / 200.0)
+                                .z(4.0)
                                 .font_size(self.size as u32 / 40)
                                 .color(self.theme.secondary_color);
                         }
                     }
                 },
-                Tile::Variable(n) => {
+                Tile::SolverVariable(n) => {
                     draw.text(&n.to_string())
                         .x_y(x, y)
+                        .z(4.0)
                         .font_size(self.size as u32 / 16)
                         .color(self.theme.secondary_color);
                 },
                 Tile::Const(n) => {
+                    let rect_x = self.size / 9.0 * ((i % 9) as f32 + 0.5) - self.size / 2.0 - self.offset;
+                    let rect_y = self.size / 9.0 * ((i / 9) as f32 + 0.5) - self.size / 2.0;
+                    draw.rect()
+                        .x_y(rect_x, rect_y)
+                        .z(1.0)
+                        .w_h(self.size / 9.0, self.size / 9.0)
+                        .color(color::Rgba {
+                            color: self.theme.secondary_color,
+                            alpha: self.theme.theme_alpha,
+                        
+                        });
                     draw.text(&n.to_string())
                         .x_y(x, y)
+                        .z(4.0)
+                        .font_size(self.size as u32 / 16)
+                        .color(self.theme.primary_color);
+                },
+                Tile::PlayerVariable(n) => {
+                    draw.text(&n.to_string())
+                        .x_y(x, y)
+                        .z(4.0)
                         .font_size(self.size as u32 / 16)
                         .color(self.theme.primary_color);
                 },
@@ -156,7 +177,7 @@ impl Model {
             draw.rect()
                 .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
                 .w_h(self.size / 9.0, self.size / 9.0)
-                .z(0.0)
+                .z(2.0)
                 .color(color::rgba(255, 0, 0, self.theme.theme_alpha));
         } else if let Some(indx) = self.selected {
             let x = (indx % 9) as f32 * self.size / 9.0 - self.size / 2.0;

@@ -68,15 +68,15 @@ pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
 
 pub fn handle_continious_key_inputs(app: &App, model: &mut Model) {
     app.keys.down.iter().for_each(|key| match key {
-        Key::Key1 | Key::Numpad1 => model.try_write_tile(Tile::Const(1)),
-        Key::Key2 | Key::Numpad2 => model.try_write_tile(Tile::Const(2)),
-        Key::Key3 | Key::Numpad3 => model.try_write_tile(Tile::Const(3)),
-        Key::Key4 | Key::Numpad4 => model.try_write_tile(Tile::Const(4)),
-        Key::Key5 | Key::Numpad5 => model.try_write_tile(Tile::Const(5)),
-        Key::Key6 | Key::Numpad6 => model.try_write_tile(Tile::Const(6)),
-        Key::Key7 | Key::Numpad7 => model.try_write_tile(Tile::Const(7)),
-        Key::Key8 | Key::Numpad8 => model.try_write_tile(Tile::Const(8)),
-        Key::Key9 | Key::Numpad9 => model.try_write_tile(Tile::Const(9)),
+        Key::Key1 | Key::Numpad1 => model.try_write_tile(Tile::PlayerVariable(1)),
+        Key::Key2 | Key::Numpad2 => model.try_write_tile(Tile::PlayerVariable(2)),
+        Key::Key3 | Key::Numpad3 => model.try_write_tile(Tile::PlayerVariable(3)),
+        Key::Key4 | Key::Numpad4 => model.try_write_tile(Tile::PlayerVariable(4)),
+        Key::Key5 | Key::Numpad5 => model.try_write_tile(Tile::PlayerVariable(5)),
+        Key::Key6 | Key::Numpad6 => model.try_write_tile(Tile::PlayerVariable(6)),
+        Key::Key7 | Key::Numpad7 => model.try_write_tile(Tile::PlayerVariable(7)),
+        Key::Key8 | Key::Numpad8 => model.try_write_tile(Tile::PlayerVariable(8)),
+        Key::Key9 | Key::Numpad9 => model.try_write_tile(Tile::PlayerVariable(9)),
         Key::Key0 | Key::Numpad0 | Key::Back | Key::Delete => model.try_write_tile(Tile::Empty),
         Key::Up => model
             .sudoku

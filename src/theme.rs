@@ -52,7 +52,7 @@ impl Theme {
                 self.secondary_color = color::GREY;
                 self.tile_color = color::BLACK;
                 self.background_color = color::BLACK;
-                self.theme_alpha = 15;
+                self.theme_alpha = 12;
             }
             ThemeType::Discord => {
                 self.primary_color = color::Rgb8::from_components((242, 243, 245));

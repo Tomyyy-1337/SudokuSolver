@@ -14,7 +14,8 @@ pub enum Direction {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Tile {
     Empty,
-    Variable(u8),
+    SolverVariable(u8),
+    PlayerVariable(u8),
     Const(u8),
 }
 
@@ -122,8 +123,8 @@ impl Sudoku {
             seen = 0;
             for indx in (0..9).map(|j| function(i, j)) {
                 match self.tiles[indx] {
-                    Tile::Variable(n) | Tile::Const(n) if seen >> n & 1 == 1 => return true,
-                    Tile::Variable(n) | Tile::Const(n) => seen |= 1 << n,
+                    Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) if seen >> n & 1 == 1 => return true,
+                    Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) => seen |= 1 << n,
                     _ => (),
                 }
             }
@@ -134,7 +135,7 @@ impl Sudoku {
     pub fn next_available_number(&self, indx: usize) -> Option<u8> {
         let available = self.avaliable_numbers(indx);
         let current = match self.tiles[indx] {
-            Tile::Variable(n) => n,
+            Tile::SolverVariable(n) => n,
             _ => 0,
         };
         for i in current as u8 + 1..=9 {
@@ -160,7 +161,7 @@ impl Sudoku {
         for i in 0..9 {
             for f in functions.iter() {
                 seen |= match self.tiles[f(indx, i)] {
-                    Tile::Variable(n) | Tile::Const(n) => 1 << n,
+                    Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) => 1 << n,
                     _ => 0,
                 };
             }
@@ -177,7 +178,7 @@ impl Sudoku {
 
     pub fn clear_variables(&mut self) {
         for tile in self.tiles.iter_mut() {
-            if let Tile::Variable(_) = tile {
+            if let Tile::SolverVariable(_) = tile {
                 *tile = Tile::Empty;
             }
         }
@@ -235,7 +236,7 @@ impl Sudoku {
     /// If the insertion results in an invalid state, the tile is not inserted.
     pub fn try_insert(&mut self, indx: usize, tile: Tile) {
         match tile {
-            Tile::Variable(n) | Tile::Const(n) if self.is_available(indx, n) => self.tiles[indx] = tile,
+            Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) if self.is_available(indx, n) => self.tiles[indx] = tile,
             Tile::Empty => self.tiles[indx] = tile,
             _ => (),
         }
@@ -268,18 +269,18 @@ impl Sudoku {
             let next_number = self.next_available_number(self.active_indx);
             match self.tiles[self.active_indx] {
                 Tile::Empty if next_number.is_some() => {
-                    self.tiles[self.active_indx] = Tile::Variable(next_number.unwrap());
+                    self.tiles[self.active_indx] = Tile::SolverVariable(next_number.unwrap());
                     self.direction = Direction::Forward;
                 }
-                Tile::Const(_) => match self.direction {
+                Tile::Const(_) | Tile::PlayerVariable(_) => match self.direction {
                     Direction::Forward => self.active_indx += 1,
                     Direction::Backward => self.active_indx -= 1,
                 }
-                Tile::Variable(_) if self.direction == Direction::Forward => {
+                Tile::SolverVariable(_) if self.direction == Direction::Forward => {
                     self.active_indx += 1
                 }
-                Tile::Variable(n) if n < 9 && next_number.is_some() => {
-                    self.tiles[self.active_indx] = Tile::Variable(next_number.unwrap());
+                Tile::SolverVariable(n) if n < 9 && next_number.is_some() => {
+                    self.tiles[self.active_indx] = Tile::SolverVariable(next_number.unwrap());
                     self.direction = Direction::Forward;
                 }
                 _ => {
