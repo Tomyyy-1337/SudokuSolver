@@ -38,9 +38,7 @@ pub fn handle_mouse_button_events(app: &App, window_height: u32, window_width: u
 
 pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
     match key {
-        Key::F11 => app
-            .main_window()
-            .set_fullscreen(!app.main_window().is_fullscreen()),
+        Key::F11 => app.main_window().set_fullscreen(!app.main_window().is_fullscreen()),
         Key::Return | Key::Space => {
             model.sudoku.reset_solver();
             model.sudoku.clear_variables();
@@ -93,8 +91,4 @@ pub fn handle_mouse_wheel_events(
     if let MouseScrollDelta::LineDelta(_x, y) = dt {
         model.sudoku.change_steps_per_frame(1.0 + 0.5 * y as f32);
     }
-}
-
-pub fn window_resized(_app: &App, model: &mut Model, dim: Vec2) {
-    model.update_size(dim.x as u32, dim.y as u32);
 }
