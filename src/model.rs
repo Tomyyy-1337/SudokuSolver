@@ -169,6 +169,7 @@ impl Model {
                 .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
                 .w_h(self.size / 9.0, self.size / 9.0)
                 .color(primary_color_with_alpha);
+            
         }
     }
 
@@ -182,7 +183,7 @@ impl Model {
 
         self.add_label(draw, "Solver:", &mut y, sub_title_size, self.theme.primary_color);
         self.add_label(draw, &format!("State: {}", self.sudoku.state.to_string()), &mut y, text_size, self.theme.primary_color);
-        self.add_label(draw, &format!("Steps per frame: {:.2}", self.sudoku.real_steps_per_frame), &mut y, text_size, self.theme.primary_color);
+        self.add_label(draw, &format!("Steps per frame: {:.3}", self.sudoku.real_steps_per_frame), &mut y, text_size, self.theme.primary_color);
         self.add_label(draw, &format!("Steps per second: {:.0}", self.fps * self.sudoku.real_steps_per_frame as f32), &mut y, text_size, self.theme.primary_color);
         self.add_label(draw, &format!("Current Steps: {}", self.sudoku.step_count), &mut y, text_size, self.theme.primary_color);
         self.add_label(draw, &"[Space] Toggle solver", &mut y, text_size, self.theme.secondary_color);

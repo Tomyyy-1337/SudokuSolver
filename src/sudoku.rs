@@ -131,13 +131,32 @@ impl Sudoku {
         false
     }
 
+    pub fn next_available_number(&self, indx: usize) -> Option<u8> {
+        let available = self.avaliable_numbers(indx);
+        let current = match self.tiles[indx] {
+            Tile::Variable(n) => n,
+            _ => 0,
+        };
+        for i in current as u8 + 1..=9 {
+            if available >> i & 1 == 0 {
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    fn is_available(&self, indx: usize, n: u8) -> bool {
+        let available = self.avaliable_numbers(indx);
+        available >> n & 1 == 0
+    }
+
     pub fn avaliable_numbers(&self, indx: usize) -> u16 {
         let mut seen: u16 = 0;
         let functions = [
             | indx: usize, i: usize | indx - indx % 9 + i,
             | indx: usize, i: usize | indx % 9 + i * 9,
             | indx: usize, i: usize | (indx % 9 ) / 3 * 3 + (indx / 9) / 3  * 27 + (i % 3) + (i / 3) * 9,
-            ];
+        ];
         for i in 0..9 {
             for f in functions.iter() {
                 seen |= match self.tiles[f(indx, i)] {
@@ -179,7 +198,7 @@ impl Sudoku {
     /// Changes the number of steps per frame by a multiplier.
     /// Steps per frame is clamped between 0.01 and 100000.
     pub fn change_steps_per_frame(&mut self, mult: f32) {
-        self.steps_per_frame = (self.steps_per_frame * mult).max(0.01).min(100000.0);
+        self.steps_per_frame = (self.steps_per_frame * mult).max(0.005).min(100000.0);
         if self.steps_per_frame < 1.0 {
             self.real_steps_per_frame = 1.0 / ((1.0 / self.steps_per_frame).floor() + 1.0);
         } else {
@@ -215,10 +234,10 @@ impl Sudoku {
     /// Tries to insert a tile at the given index.
     /// If the insertion results in an invalid state, the tile is not inserted.
     pub fn try_insert(&mut self, indx: usize, tile: Tile) {
-        let tmp = self.tiles[indx];
-        self.tiles[indx] = tile;
-        if !self.is_valid() {
-            self.tiles[indx] = tmp;
+        match tile {
+            Tile::Variable(n) | Tile::Const(n) if self.is_available(indx, n) => self.tiles[indx] = tile,
+            Tile::Empty => self.tiles[indx] = tile,
+            _ => (),
         }
     }
 
@@ -246,27 +265,28 @@ impl Sudoku {
                 return;
             }
             self.step_count += 1;
+            let next_number = self.next_available_number(self.active_indx);
             match self.tiles[self.active_indx] {
-                Tile::Empty => {
-                    self.tiles[self.active_indx] = Tile::Variable(1);
+                Tile::Empty if next_number.is_some() => {
+                    self.tiles[self.active_indx] = Tile::Variable(next_number.unwrap());
                     self.direction = Direction::Forward;
                 }
                 Tile::Const(_) => match self.direction {
                     Direction::Forward => self.active_indx += 1,
                     Direction::Backward => self.active_indx -= 1,
-                },
-                Tile::Variable(_) if self.is_valid() && self.direction == Direction::Forward => {
+                }
+                Tile::Variable(_) if self.direction == Direction::Forward => {
                     self.active_indx += 1
                 }
-                Tile::Variable(n) if n == 9 => {
+                Tile::Variable(n) if n < 9 && next_number.is_some() => {
+                    self.tiles[self.active_indx] = Tile::Variable(next_number.unwrap());
+                    self.direction = Direction::Forward;
+                }
+                _ => {
                     self.tiles[self.active_indx] = Tile::Empty;
                     self.active_indx -= 1;
                     self.direction = Direction::Backward;
-                }
-                Tile::Variable(n) => {
-                    self.tiles[self.active_indx] = Tile::Variable(n + 1);
-                    self.direction = Direction::Forward;
-                }
+                },
             }
         }
     }
