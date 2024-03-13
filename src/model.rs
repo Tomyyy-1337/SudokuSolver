@@ -66,13 +66,14 @@ impl Model {
     }
 
     pub fn update_past_frametimes(&mut self, time: f32) {
+        self.application_ticks += 1;
         self.past_frametimes.push_back(time);
         self.past_frametimes_sum += time;
         if self.past_frametimes.len() > 150 {
             self.past_frametimes_sum -= self.past_frametimes.pop_front().unwrap();
         }
         if self.application_ticks % 150 == 0 {
-            self.fps = (1.0 / (self.past_frametimes_sum / self.past_frametimes.len() as f32)).round();
+            self.fps = (self.past_frametimes.len() as f32 / self.past_frametimes_sum).round();
         }
     }
 
