@@ -15,6 +15,7 @@ fn model(app: &App) -> Model {
     let height = 800;
     app.new_window()
         .size(width, height)
+        .mouse_wheel(events::handle_mouse_wheel_events)
         .view(view)
         .build()
         .unwrap();

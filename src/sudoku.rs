@@ -89,8 +89,8 @@ impl Sudoku {
     /// A State is valid if no number is repeated in any row, column or 3x3 square.
     pub fn is_valid(&self) -> bool {
         !self.check_seen(|i, j| i + j * 9)
-            && !self.check_seen(|i, j| i * 9 + j)
-            && !self.check_seen(|i, j| (i % 3) * 3 + (i / 3) * 27 + (j % 3) + (j / 3) * 9)
+        && !self.check_seen(|i, j| i * 9 + j)
+        && !self.check_seen(|i, j| (i % 3) * 3 + (i / 3) * 27 + (j % 3) + (j / 3) * 9)
     }
 
     /// Checks if the current row, column or 3x3 square has any repeated numbers.

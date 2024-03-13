@@ -82,3 +82,9 @@ pub fn handle_keyboard_events(app: &App, model: &mut Model) {
         _ => (),
     });
 }
+
+pub fn handle_mouse_wheel_events(_app: &App, model: &mut Model, dt: MouseScrollDelta, _phase: TouchPhase) {
+    if let MouseScrollDelta::LineDelta(_x, y) = dt {
+        model.sudoku.change_steps_per_frame(1.0 + 0.5 * y as f64);
+    }
+}

@@ -13,7 +13,10 @@ pub struct Model {
     pub selected: Option<usize>,
     pub key_delay: f32,
     pub offset: f32,
-    pub past_frametimes: VecDeque<f32>,
+    past_frametimes: VecDeque<f32>,
+    past_frametimes_sum: f32,
+    pub fps: f32,
+    pub application_ticks: u64,
 }
 
 impl Model {
@@ -31,6 +34,7 @@ impl Model {
     }
 
     pub fn update_size(&mut self, width: u32, height: u32) {
+        self.application_ticks += 1;
         let size = height.min(width) as f32 - 10.0;
         let gui_width = ((width as f32 - self.size) - 10.0)
             .max(140.0)
@@ -68,9 +72,13 @@ impl Model {
     }
 
     pub fn update_past_frametimes(&mut self, time: f32) {
-        self.past_frametimes.push_back(time - 0.00001);
-        if self.past_frametimes.len() > 100 {
-            self.past_frametimes.pop_front();
+        self.past_frametimes.push_back(time);
+        self.past_frametimes_sum += time;
+        if self.past_frametimes.len() > 150 {
+            self.past_frametimes_sum -= self.past_frametimes.pop_front().unwrap();
+        }
+        if self.application_ticks % 150 == 0 {
+            self.fps = (1.0 / (self.past_frametimes_sum / self.past_frametimes.len() as f32)).round();
         }
     }
 
@@ -156,12 +164,11 @@ impl Model {
             self.size / 2.0 - self.offset + self.gui_width / 2.0 + 15.0,
             self.size / 2.0,
         );
-        let framerate = 100.0 / self.past_frametimes.iter().sum::<f32>();
         Model::add_label(draw, "Sudoku", x, &mut y, self.gui_width, title_size, color::WHITE);
         Model::add_label(draw, "Solver:", x, &mut y, self.gui_width, sub_title_size, color::WHITE);
         Model::add_label(draw, &format!("Running: {}", self.sudoku.running), x, &mut y, self.gui_width, text_size, color::WHITE);
         Model::add_label(draw, &format!("Steps per frame: {:.2}", self.sudoku.real_steps_per_frame), x, &mut y, self.gui_width, text_size, color::WHITE);
-        Model::add_label(draw, &format!("Steps per second: {:.0}", framerate.round() * self.sudoku.real_steps_per_frame as f32), x, &mut y, self.gui_width, text_size, color::WHITE);
+        Model::add_label(draw, &format!("Steps per second: {:.0}", self.fps * self.sudoku.real_steps_per_frame as f32), x, &mut y, self.gui_width, text_size, color::WHITE);
         Model::add_label(draw, &format!("Current Steps: {}", self.sudoku.step_count), x, &mut y, self.gui_width, text_size, color::WHITE);
         Model::add_label(draw, &"[Space] Toggle solver", x, &mut y, self.gui_width, text_size, color::GREY);
         Model::add_label(draw, &"[E] Clear Result", x, &mut y, self.gui_width, text_size, color::GREY);
