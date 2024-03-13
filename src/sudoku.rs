@@ -131,6 +131,24 @@ impl Sudoku {
         false
     }
 
+    pub fn avaliable_numbers(&self, indx: usize) -> u16 {
+        let mut seen: u16 = 0;
+        let functions = [
+            | indx: usize, i: usize | indx - indx % 9 + i,
+            | indx: usize, i: usize | indx % 9 + i * 9,
+            | indx: usize, i: usize | (indx % 9 ) / 3 * 3 + (indx / 9) / 3  * 27 + (i % 3) + (i / 3) * 9,
+            ];
+        for i in 0..9 {
+            for f in functions.iter() {
+                seen |= match self.tiles[f(indx, i)] {
+                    Tile::Variable(n) | Tile::Const(n) => 1 << n,
+                    _ => 0,
+                };
+            }
+        }
+        seen
+    }
+
     pub fn reset_solver(&mut self) {
         self.active_indx = 0;
         self.step_count = 0;

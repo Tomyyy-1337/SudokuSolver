@@ -61,6 +61,7 @@ pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
         Key::Right => model.sudoku.difficulty = model.sudoku.difficulty.harder(),
         Key::Left => model.sudoku.difficulty = model.sudoku.difficulty.easier(),
         Key::T => model.theme.next(),
+        Key::Z => model.show_avaliable = !model.show_avaliable,
         _ => (),
     }
 }

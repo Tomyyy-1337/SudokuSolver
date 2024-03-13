@@ -12,6 +12,7 @@ pub struct Model {
     pub window_height: u32,
     pub offset: f32,
     pub selected: Option<usize>,
+    pub show_avaliable: bool,
     size: f32,
     gui_width: f32,
     past_frametimes: VecDeque<f32>,
@@ -82,19 +83,30 @@ impl Model {
             let x = self.size / 9.0 * ((i % 9) as f32 + 0.5) - self.size / 2.0 - self.offset;
             let y = self.size / 9.0 * ((i / 9) as f32 + 0.5) - self.size / 2.04;
             match t {
-                Tile::Empty => (),
+                Tile::Empty if self.show_avaliable => {
+                    let avaliable = self.sudoku.avaliable_numbers(i);
+                    for n in 0..9 {
+                        if avaliable >> n & 2 == 0 {
+                            draw.text(&format!("{}", n + 1))
+                                .x_y(x + (n % 3 - 1) as f32 * self.size / 40.0, y + (n / 3 - 1) as f32 * self.size / 40.0 - self.size / 200.0)
+                                .font_size(self.size as u32 / 40)
+                                .color(self.theme.secondary_color);
+                        }
+                    }
+                },
                 Tile::Variable(n) => {
                     draw.text(&n.to_string())
                         .x_y(x, y)
                         .font_size(self.size as u32 / 16)
                         .color(self.theme.secondary_color);
-                }
+                },
                 Tile::Const(n) => {
                     draw.text(&n.to_string())
                         .x_y(x, y)
                         .font_size(self.size as u32 / 16)
                         .color(self.theme.primary_color);
-                }
+                },
+                _ => (),
             }
         });
     }
@@ -163,7 +175,7 @@ impl Model {
     fn draw_gui(&self, draw: &Draw) {
         let title_size = (self.gui_width / 6.0) as u32;
         let sub_title_size = (self.gui_width / 8.0) as u32;
-        let text_size = (self.gui_width / 14.0) as u32;
+        let text_size = (self.gui_width / 15.0) as u32;
 
         let mut y = self.size / 2.0;
         self.add_label(draw, "Sudoku", &mut y, title_size, self.theme.primary_color);
@@ -188,6 +200,7 @@ impl Model {
         self.add_label(draw, "Settings:", &mut y, sub_title_size, self.theme.primary_color);
         self.add_label(draw, &format!("Color Theme: {}", self.theme.theme_type.to_string()), &mut y, text_size, self.theme.primary_color);
         self.add_label(draw, &"[T] Change Color Theme", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &"[Z] Toggle Available Numbers", &mut y, text_size, self.theme.secondary_color);
         self.add_label(draw, &"[F11] Toggle Fullscreen", &mut y, text_size, self.theme.secondary_color);
         self.add_label(draw, &"[Escape] Close application", &mut y, text_size, self.theme.secondary_color);
 

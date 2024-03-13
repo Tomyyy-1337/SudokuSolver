@@ -4,7 +4,7 @@ use nannou::prelude::*;
 mod events;
 mod model;
 mod sudoku;
-use crate::sudoku::SolverState;
+use sudoku::SolverState;
 mod theme;
 use model::Model;
 
