@@ -1,4 +1,4 @@
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 use nannou::prelude::*;
 
 mod events;
@@ -27,11 +27,11 @@ fn model(app: &App) -> Model {
 }
 
 fn update(app: &App, model: &mut Model, _update: Update) {
+    model.update_past_frametimes(app.duration.since_prev_update.as_secs_f32());
     events::handle_continious_key_inputs(app, model);
     events::handle_mouse_button_events(app, model.window_height, model.window_width, model);
-    
+
     model.update_size(app.window_rect().w() as u32, app.window_rect().h() as u32);
-    model.update_past_frametimes(app.duration.since_prev_update.as_secs_f32());
     if model.sudoku.running {
         model.sudoku.step();
     }
