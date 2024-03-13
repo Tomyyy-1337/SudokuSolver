@@ -58,11 +58,6 @@ pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
 
 pub fn handle_continious_key_inputs(app: &App, model: &mut Model) {
     app.keys.down.iter().for_each(|key| match key {
-        Key::Back | Key::Delete => {
-            if let Some(selected) = model.selected {
-                model.sudoku.try_insert(selected, Tile::Empty);
-            }
-        }
         Key::Key1 | Key::Numpad1 => model.try_write_tile(Tile::Const(1)),
         Key::Key2 | Key::Numpad2 => model.try_write_tile(Tile::Const(2)),
         Key::Key3 | Key::Numpad3 => model.try_write_tile(Tile::Const(3)),
@@ -72,13 +67,9 @@ pub fn handle_continious_key_inputs(app: &App, model: &mut Model) {
         Key::Key7 | Key::Numpad7 => model.try_write_tile(Tile::Const(7)),
         Key::Key8 | Key::Numpad8 => model.try_write_tile(Tile::Const(8)),
         Key::Key9 | Key::Numpad9 => model.try_write_tile(Tile::Const(9)),
-        Key::Key0 | Key::Numpad0 => model.try_write_tile(Tile::Empty),
-        Key::Up => model
-            .sudoku
-            .change_steps_per_frame(1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),
-        Key::Down => model.sudoku.change_steps_per_frame(
-            1.0 / (1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),
-        ),
+        Key::Key0 | Key::Numpad0 | Key::Back | Key::Delete => model.try_write_tile(Tile::Empty),
+        Key::Up => model.sudoku.change_steps_per_frame(1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),
+        Key::Down => model.sudoku.change_steps_per_frame(1.0 / (1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),),
         _ => (),
     });
 }
