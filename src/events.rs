@@ -64,14 +64,14 @@ pub fn handle_keyboard_events(app: &App, model: &mut Model) {
             model.sudoku.reset_solver();
         }
         Key::W if model.key_delay_over() && !model.sudoku.running => {
-            model.sudoku.tiles = vec![Tile::Empty; 81];
+            model.sudoku.tiles = [Tile::Empty; 81];
             model.sudoku.reset_solver();
         }
         Key::Up => model
             .sudoku
-            .change_steps_per_frame(1.0 + 5.0 * app.duration.since_prev_update.as_secs_f64()),
+            .change_steps_per_frame(1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),
         Key::Down => model.sudoku.change_steps_per_frame(
-            1.0 / (1.0 + 5.0 * app.duration.since_prev_update.as_secs_f64()),
+            1.0 / (1.0 + 5.0 * app.duration.since_prev_update.as_secs_f32()),
         ),
         Key::Right if model.key_delay_over() => {
             model.sudoku.difficulty = model.sudoku.difficulty.harder()
@@ -85,6 +85,6 @@ pub fn handle_keyboard_events(app: &App, model: &mut Model) {
 
 pub fn handle_mouse_wheel_events(_app: &App, model: &mut Model, dt: MouseScrollDelta, _phase: TouchPhase) {
     if let MouseScrollDelta::LineDelta(_x, y) = dt {
-        model.sudoku.change_steps_per_frame(1.0 + 0.5 * y as f64);
+        model.sudoku.change_steps_per_frame(1.0 + 0.5 * y as f32);
     }
 }

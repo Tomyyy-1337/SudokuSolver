@@ -57,21 +57,21 @@ impl Difficulty {
 
 #[derive(Clone)]
 pub struct Sudoku {
-    pub tiles: Vec<Tile>,
+    pub tiles: [Tile; 81],
     pub active_indx: usize,
     pub running: bool,
     pub step_count: u64,
-    pub steps_per_frame: f64,
-    pub real_steps_per_frame: f64,
+    pub steps_per_frame: f32,
+    pub real_steps_per_frame: f32,
     pub difficulty: Difficulty,
     direction: Direction,
-    substeps: u64,
+    substeps: u8,
 }
 
 impl Default for Sudoku {
     fn default() -> Self {
         Sudoku {
-            tiles: vec![Tile::Empty; 81],
+            tiles: [Tile::Empty; 81],
             active_indx: 0,
             direction: Direction::Forward,
             running: false,
@@ -139,7 +139,7 @@ impl Sudoku {
 
     /// Changes the number of steps per frame by a multiplier.
     /// Steps per frame is clamped between 0.01 and 100000.
-    pub fn change_steps_per_frame(&mut self, mult: f64) {
+    pub fn change_steps_per_frame(&mut self, mult: f32) {
         self.steps_per_frame = (self.steps_per_frame * mult).max(0.01).min(100000.0);
         if self.steps_per_frame < 1.0 {
             self.real_steps_per_frame = 1.0 / ((1.0 / self.steps_per_frame).floor() + 1.0);
@@ -157,7 +157,9 @@ impl Sudoku {
                     '0' => Tile::Empty,
                     _ => panic!("Invalid character in input"),
                 })
-                .collect(),
+                .collect::<Vec<Tile>>()
+                .try_into()
+                .unwrap(),
             active_indx: 0,
             direction: Direction::Forward,
             running: false,
@@ -184,7 +186,7 @@ impl Sudoku {
     pub fn step(&mut self) {
         let mut steps_per_frame = self.steps_per_frame;
         if self.steps_per_frame < 1.0 {
-            if self.substeps < (1.0 / self.steps_per_frame) as u64 {
+            if self.substeps < (1.0 / self.steps_per_frame) as u8 {
                 self.substeps += 1;
                 return;
             }
