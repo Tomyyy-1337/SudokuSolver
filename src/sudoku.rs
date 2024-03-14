@@ -1,3 +1,5 @@
+use std::io::Empty;
+
 use rand::seq::IteratorRandom;
 
 const EASY: &str = include_str!("../input/Sudoku_easy.sdm");
@@ -229,14 +231,19 @@ impl Sudoku {
     }
 
     fn solution_possible(&self) -> bool {
-        self.tiles.iter()
-            .enumerate()
-            .skip(self.active_indx+1)
-            .filter_map(|(i, tile)| match tile {
-                Tile::Empty => Some(i),
-                _ => None,
-            })
-            .all(|i| self.next_available_number(i).is_some())
+        let functions = [
+            | indx: usize, i: usize | indx - indx % 9 + i,
+            | indx: usize, i: usize | indx % 9 + i * 9,
+            | indx: usize, i: usize | (indx % 9 ) / 3 * 3 + (indx / 9) / 3  * 27 + (i % 3) + (i / 3) * 9,
+        ];
+        functions.iter().all(|f| 
+            (0..9)
+                .map(|i| f(self.active_indx, i))
+                .all(|tile| match self.tiles[tile] {
+                    Tile::Empty => self.avaliable_numbers(tile) != 0b1111111110,
+                    _ => true,
+                })
+        )
     }
 
     pub fn step(&mut self) {
