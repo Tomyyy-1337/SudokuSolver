@@ -207,6 +207,9 @@ impl Sudoku {
     }
 
     pub fn try_insert(&mut self, indx: usize, tile: Tile) {
+        if let Tile::Const(_) = self.tiles[indx] {
+            return;
+        }
         match tile {
             Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) if self.is_available(indx, n) => self.tiles[indx] = tile,
             Tile::Empty => self.tiles[indx] = tile,
@@ -227,7 +230,6 @@ impl Sudoku {
             self.real_steps_per_frame as u32
         }
     }
-
     fn solution_possible(&self) -> bool {
         let functions = [
             | indx: usize, i: usize | indx - indx % 9 + i,

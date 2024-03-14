@@ -11,7 +11,8 @@ pub struct Model {
     pub window_height: u32,
     pub offset: f32,
     pub selected: Option<usize>,
-    pub show_avaliable: bool,
+    pub show_available: bool,
+    pub higlight_relevant: bool,
     size: f32,
     gui_width: f32,
     past_frametimes: VecDeque<f32>,
@@ -22,8 +23,9 @@ pub struct Model {
 
 impl Default for Model {
     fn default() -> Self {
-        Model {
-            show_avaliable: true,
+        let mut model = Model {
+            show_available: true,
+            higlight_relevant: true,
             selected: None,
             sudoku: sudoku::Sudoku::default(),
             theme: Theme::default(),
@@ -36,7 +38,9 @@ impl Default for Model {
             past_frametimes_sum: 0.0,
             fps: 0.0,
             application_ticks: 0,
-        }
+        };
+        model.sudoku.load_random();
+        model
     }
 }
 
@@ -102,7 +106,7 @@ impl Model {
             let x = self.size / 9.0 * ((i % 9) as f32 + 0.5) - self.size / 2.0 - self.offset;
             let y = self.size / 9.0 * ((i / 9) as f32 + 0.5) - self.size / 2.04;
             match t {
-                Tile::Empty if self.show_avaliable => {
+                Tile::Empty if self.show_available => {
                     let avaliable = self.sudoku.avaliable_numbers(i);
                     for n in 0..9 {
                         if avaliable >> n & 2 == 0 {
@@ -197,32 +201,9 @@ impl Model {
                 .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
                 .w_h(self.size / 9.0, self.size / 9.0)
                 .z(1.0)
-                .color(color::rgba(255, 0, 0, self.theme.theme_alpha));
-
-            let functions = [
-                | indx: usize, i: usize | indx - indx % 9 + i,
-                | indx: usize, i: usize | indx % 9 + i * 9,
-                | indx: usize, i: usize | (indx % 9 ) / 3 * 3 + (indx / 9) / 3  * 27 + (i % 3) + (i / 3) * 9,
-            ];
-
-            for f in functions.iter() {
-                for i in 0..9 {
-                    let tile = f(self.sudoku.active_indx, i);
-                    {
-                        let x = (tile % 9) as f32 * self.size / 9.0 - self.size / 2.0;
-                        let y = (tile / 9) as f32 * self.size / 9.0 - self.size / 2.0;
-                        draw.rect()
-                            .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
-                            .w_h(self.size / 11.0, self.size / 11.0,)
-                            .z(1.0)
-                            .stroke_color(self.theme.secondary_color)
-                            .stroke_weight(1.0)
-                            .color(Rgba {
-                                color: self.theme.primary_color,
-                                alpha: 0,
-                            });
-                    }
-                }
+                .color(color::rgba(255, 0, 0, self.theme.theme_alpha * 2));
+            if self.higlight_relevant {
+                self.highlight_relevant(draw, self.sudoku.active_indx);
             }
         } else if let Some(indx) = self.selected {
             let x = (indx % 9) as f32 * self.size / 9.0 - self.size / 2.0;
@@ -236,9 +217,41 @@ impl Model {
                 .w_h(self.size / 9.0, self.size / 9.0)
                 .z(3.0)
                 .color(primary_color_with_alpha);
+
+            if self.higlight_relevant {
+                self.highlight_relevant(draw, indx);
+            }
         }
     }
 
+    fn highlight_relevant(&self, draw: &Draw, indx: usize) {
+        let functions = [
+            | indx: usize, i: usize | indx - indx % 9 + i,
+            | indx: usize, i: usize | indx % 9 + i * 9,
+            | indx: usize, i: usize | (indx % 9 ) / 3 * 3 + (indx / 9) / 3  * 27 + (i % 3) + (i / 3) * 9,
+        ];
+    
+        for f in functions.iter() {
+            for i in 0..9 {
+                let tile = f(indx, i);
+                {
+                    let x = (tile % 9) as f32 * self.size / 9.0 - self.size / 2.0;
+                    let y = (tile / 9) as f32 * self.size / 9.0 - self.size / 2.0;
+                    draw.rect()
+                        .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
+                        .w_h(self.size / 11.0, self.size / 11.0,)
+                        .z(1.0)
+                        .stroke_color(self.theme.secondary_color)
+                        .stroke_weight(1.0)
+                        .color(Rgba {
+                            color: self.theme.primary_color,
+                            alpha: 0,
+                        });
+                }
+            }
+        }
+    }
+    
     fn draw_gui(&self, draw: &Draw) {
         let title_size = (self.gui_width / 6.0) as u32;
         let sub_title_size = (self.gui_width / 8.0) as u32;
@@ -268,6 +281,7 @@ impl Model {
         self.add_label(draw, &format!("Color Theme: {}", self.theme.theme_type.to_string()), &mut y, text_size, self.theme.primary_color);
         self.add_label(draw, &"[T] Change Color Theme", &mut y, text_size, self.theme.secondary_color);
         self.add_label(draw, &"[Z] Toggle Available Numbers", &mut y, text_size, self.theme.secondary_color);
+        self.add_label(draw, &"[U] Highlight relevant Tiles", &mut y, text_size, self.theme.secondary_color);
         self.add_label(draw, &"[F11] Toggle Fullscreen", &mut y, text_size, self.theme.secondary_color);
         self.add_label(draw, &"[Escape] Close application", &mut y, text_size, self.theme.secondary_color);
 

@@ -68,7 +68,8 @@ pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
             model.sudoku.load_random();
         }
         Key::T => model.theme.next(),
-        Key::Z => model.show_avaliable = !model.show_avaliable,
+        Key::Z => model.show_available = !model.show_available,
+        Key::U => model.higlight_relevant = !model.higlight_relevant,
         _ => (),
     }
 }
