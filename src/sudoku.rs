@@ -228,6 +228,17 @@ impl Sudoku {
         }
     }
 
+    fn solution_possible(&self) -> bool {
+        self.tiles.iter()
+            .enumerate()
+            .skip(self.active_indx+1)
+            .filter_map(|(i, tile)| match tile {
+                Tile::Empty => Some(i),
+                _ => None,
+            })
+            .all(|i| self.next_available_number(i).is_some())
+    }
+
     pub fn step(&mut self) {
         for _ in 0..self.get_steps() {
             if self.active_indx >= 81 {
@@ -250,7 +261,10 @@ impl Sudoku {
                 }
                 Tile::SolverVariable(_) | Tile::Empty if next_number.is_some() => {
                     self.tiles[self.active_indx] = Tile::SolverVariable(next_number.unwrap());
-                    self.direction = Direction::Forward;
+                    match self.solution_possible() {
+                        true => self.direction = Direction::Forward,
+                        false => self.direction = Direction::Backward,
+                    }
                 }
                 _ => {
                     self.tiles[self.active_indx] = Tile::Empty;
