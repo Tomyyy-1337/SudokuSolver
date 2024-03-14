@@ -4,7 +4,6 @@ use nannou::{color::{self, rgb::Rgba}, prelude::*};
 use crate::sudoku::{self, Tile};
 use crate::theme::{Theme, ThemeType};
 
-#[derive(Default)]
 pub struct Model {
     pub sudoku: sudoku::Sudoku,
     pub theme: Theme,
@@ -19,6 +18,26 @@ pub struct Model {
     past_frametimes_sum: f32,
     fps: f32,
     application_ticks: u64,
+}
+
+impl Default for Model {
+    fn default() -> Self {
+        Model {
+            show_avaliable: true,
+            selected: None,
+            sudoku: sudoku::Sudoku::default(),
+            theme: Theme::default(),
+            window_width: 0,
+            window_height: 0,
+            offset: 0.0,
+            size: 0.0,
+            gui_width: 0.0,
+            past_frametimes: VecDeque::new(),
+            past_frametimes_sum: 0.0,
+            fps: 0.0,
+            application_ticks: 0,
+        }
+    }
 }
 
 impl Model {
@@ -107,7 +126,7 @@ impl Model {
                     let rect_y = self.size / 9.0 * ((i / 9) as f32 + 0.5) - self.size / 2.0;
                     draw.rect()
                         .x_y(rect_x, rect_y)
-                        .z(1.0)
+                        .z(1.1)
                         .w_h(self.size / 9.0, self.size / 9.0)
                         .color(color::Rgba {
                             color: self.theme.secondary_color,
@@ -177,8 +196,34 @@ impl Model {
             draw.rect()
                 .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
                 .w_h(self.size / 9.0, self.size / 9.0)
-                .z(2.0)
+                .z(1.0)
                 .color(color::rgba(255, 0, 0, self.theme.theme_alpha));
+
+            let functions = [
+                | indx: usize, i: usize | indx - indx % 9 + i,
+                | indx: usize, i: usize | indx % 9 + i * 9,
+                | indx: usize, i: usize | (indx % 9 ) / 3 * 3 + (indx / 9) / 3  * 27 + (i % 3) + (i / 3) * 9,
+            ];
+
+            for f in functions.iter() {
+                for i in 0..9 {
+                    let tile = f(self.sudoku.active_indx, i);
+                    {
+                        let x = (tile % 9) as f32 * self.size / 9.0 - self.size / 2.0;
+                        let y = (tile / 9) as f32 * self.size / 9.0 - self.size / 2.0;
+                        draw.rect()
+                            .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
+                            .w_h(self.size / 11.0, self.size / 11.0,)
+                            .z(1.0)
+                            .stroke_color(self.theme.secondary_color)
+                            .stroke_weight(1.0)
+                            .color(Rgba {
+                                color: self.theme.primary_color,
+                                alpha: 0,
+                            });
+                    }
+                }
+            }
         } else if let Some(indx) = self.selected {
             let x = (indx % 9) as f32 * self.size / 9.0 - self.size / 2.0;
             let y = (indx / 9) as f32 * self.size / 9.0 - self.size / 2.0;
@@ -189,6 +234,7 @@ impl Model {
             draw.rect()
                 .x_y(x + self.size / 18.0 - self.offset, y + self.size / 18.0)
                 .w_h(self.size / 9.0, self.size / 9.0)
+                .z(3.0)
                 .color(primary_color_with_alpha);
         }
     }

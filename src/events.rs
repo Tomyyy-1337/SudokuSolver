@@ -1,4 +1,5 @@
 use crate::model::Model;
+use crate::sudoku::Difficulty;
 use crate::sudoku::SolverState;
 use crate::sudoku::Tile;
 use nannou::prelude::*;
@@ -58,8 +59,14 @@ pub fn handle_key_pressed(app: &App, model: &mut Model, key: Key) {
             model.sudoku.tiles = [Tile::Empty; 81];
             model.sudoku.reset_solver();
         }
-        Key::Right => model.sudoku.difficulty = model.sudoku.difficulty.harder(),
-        Key::Left => model.sudoku.difficulty = model.sudoku.difficulty.easier(),
+        Key::Right if model.sudoku.difficulty != Difficulty::VeryHard => {
+            model.sudoku.difficulty = model.sudoku.difficulty.harder();
+            model.sudoku.load_random();
+        },
+        Key::Left if model.sudoku.difficulty != Difficulty::Easy => {
+            model.sudoku.difficulty = model.sudoku.difficulty.easier();
+            model.sudoku.load_random();
+        }
         Key::T => model.theme.next(),
         Key::Z => model.show_avaliable = !model.show_avaliable,
         _ => (),

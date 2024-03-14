@@ -1,5 +1,3 @@
-use std::io::Empty;
-
 use rand::seq::IteratorRandom;
 
 const EASY: &str = include_str!("../input/Sudoku_easy.sdm");
