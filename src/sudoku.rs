@@ -19,6 +19,15 @@ pub enum Tile {
     Const(u8),
 }
 
+impl Tile {
+    pub fn to_u16(&self) -> Option<u16> {
+        match self {
+            Tile::Empty => None,
+            Tile::SolverVariable(n) | Tile::PlayerVariable(n) | Tile::Const(n) => Some(*n as u16),
+        }
+    }
+}
+
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Difficulty {
     Easy,
@@ -108,13 +117,10 @@ impl Default for Sudoku {
 impl Sudoku {
     pub fn next_available_number(&self, indx: usize) -> Option<u8> {
         let available = self.avaliable_numbers(indx);
-        let current = match self.tiles[indx] {
-            Tile::SolverVariable(n) => n,
-            _ => 0,
-        };
-        for i in current as u8 + 1..=9 {
+        let current = self.tiles[indx].to_u16().unwrap_or(0);
+        for i in current + 1..=9 {
             if available >> i & 1 == 0 {
-                return Some(i);
+                return Some(i as u8);
             }
         }
         None
@@ -126,21 +132,9 @@ impl Sudoku {
     }
 
     pub fn avaliable_numbers(&self, indx: usize) -> u16 {
-        let mut seen: u16 = 0;
-        let functions = [
-            | indx: usize, i: usize | indx - indx % 9 + i,
-            | indx: usize, i: usize | indx % 9 + i * 9,
-            | indx: usize, i: usize | (indx % 9 ) / 3 * 3 + (indx / 9) / 3  * 27 + (i % 3) + (i / 3) * 9,
-        ];
-        for f in functions.iter() {
-            for i in 0..9 {
-                match self.tiles[f(indx, i)] {
-                    Tile::SolverVariable(n) | Tile::Const(n) | Tile::PlayerVariable(n) => seen |= 1 << n,
-                    _ => (),
-                };
-            }
-        }
-        seen
+        Sudoku::squares_iter(indx)
+            .filter_map(|i| self.tiles[i].to_u16())
+            .fold(0, |acc, n| acc | 1 << n)
     }
 
     pub fn reset_solver(&mut self) {
@@ -230,20 +224,24 @@ impl Sudoku {
             self.real_steps_per_frame as u32
         }
     }
+
+    const FUNCTIONS: [fn(usize, usize) -> usize; 3] = [
+        | indx: usize, i: usize | indx - indx % 9 + i,
+        | indx: usize, i: usize | indx % 9 + i * 9,
+        | indx: usize, i: usize | (indx % 9 ) / 3 * 3 + (indx / 9) / 3  * 27 + (i % 3) + (i / 3) * 9,
+    ];
+
+    pub fn squares_iter(indx: usize) -> impl Iterator<Item = usize> {
+        Sudoku::FUNCTIONS.iter()
+            .flat_map(move |f| (0..9).map(move |i| f(indx, i)))
+    }
+
     fn solution_possible(&self) -> bool {
-        let functions = [
-            | indx: usize, i: usize | indx - indx % 9 + i,
-            | indx: usize, i: usize | indx % 9 + i * 9,
-            | indx: usize, i: usize | (indx % 9 ) / 3 * 3 + (indx / 9) / 3  * 27 + (i % 3) + (i / 3) * 9,
-        ];
-        functions.iter().all(|f| 
-            (0..9)
-                .map(|i| f(self.active_indx, i))
-                .all(|tile| match self.tiles[tile] {
-                    Tile::Empty => self.avaliable_numbers(tile) != 0b1111111110,
-                    _ => true,
-                })
-        )
+        Sudoku::squares_iter(self.active_indx)
+            .all(|tile| match self.tiles[tile] {
+                Tile::Empty => self.avaliable_numbers(tile) != 0b1111111110,
+                _ => true,
+            })
     }
 
     pub fn step(&mut self) {
